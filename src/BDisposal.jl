@@ -1,9 +1,8 @@
 module BDisposal
 
-using DataFrames, CSV, JuMP, GLPK
+using DataFrames, JuMP, Ipopt#,GLPK, AmplNLWriter
 
 export efficiencyScores
-
 
 # Define the function that compute the efficiency measures
 """
@@ -30,12 +29,16 @@ distance to the production frontier, i.e. their degree of efficiency.
 * Only the static efficiency analysis is implemented at the moment
 """
 function efficiencyScores(inputs,goodOutputs,badOutputs,data;
-                                   retToScale="constant",effAnalysisType="static",formattedOutput=false)
+                                   retToScale="constant",effAnalysisType="static",formattedOutput=false,
+                                   badInputs=[],
+                                   dirGI=1,dirBI=1,dirGO=1,dirBO=-1,
+                                   startθ=0,startμ=0,startλ=1.1)
+
     # Data processing
     sort!(data, [:period, :dmu]) # sort data by period and dmu
     periods = unique(data.period)
     dmus    = unique(data.dmu)
-    nI, nGO, nBO, nPer, nDMUs = length(inputs), length(goodOutputs), length(badOutputs), length(periods),length(dmus)
+    nI, nGO, nBO, nPer, nDMUs, nbI = length(inputs), length(goodOutputs), length(badOutputs), length(periods),length(dmus), length(badInputs)
 
     λs_convex    = Array{Union{Missing,Float64,String}}(undef,nDMUs,nPer) # Output matrix hosting the results (nDMUs,nPer)
     λs_nonconvex = Array{Union{Missing,Float64,String}}(undef,nDMUs,nPer) # Output matrix hosting the results (nDMUs,nPer)
@@ -48,6 +51,7 @@ function efficiencyScores(inputs,goodOutputs,badOutputs,data;
         inp = convert(Matrix{Float64},periodData[:,inputs])
         gO  = convert(Matrix{Float64},periodData[:,goodOutputs])
         bO  = convert(Matrix{Float64},periodData[:,badOutputs])
+        bInp  = convert(Matrix{Float64},periodData[:,badInputs])
 
         # Solving for each dmu
         for dmuIdx in 1:nDMUs
@@ -55,56 +59,48 @@ function efficiencyScores(inputs,goodOutputs,badOutputs,data;
             inp₀ = inp[dmuIdx,:] # inputs of this dmu (x in the model)
             gO₀  = gO[dmuIdx,:] # good outputs of this dmu (y in the model)
             bO₀  = bO[dmuIdx,:] # bad outputs of this dmu (y in the model)
+            bInp₀ = nbI > 0 ? bInp[dmuIdx,:] : []
 
             # CONVEX analysis....
 
             # Model declaration (efficiency model)
-            effmodel = Model(optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF)) # we choose GLPK with a verbose output
+            #effmodel = Model(optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF)) # we choose GLPK with a verbose output
+            effmodel = Model(optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0))
+            #effmodel = Model(() -> AmplNLWriter.Optimizer("ipopt",["print_level=0"]))
 
             # Defining variables
             @variables effmodel begin
-                θ[z in 1:nDMUs] >= 0 # thetas (nDMUs)
-                μ[z in 1:nDMUs] >= 0 # mus (nDMUs)
-                λ
+                θ[z in 1:nDMUs] >= 0, (start = startθ) # thetas (nDMUs)
+                μ[z in 1:nDMUs] >= 0, (start = startμ) # mus (nDMUs)
+                λ, (start = startλ)
             end
 
             # Defining constraints
-            if retToScale == "constant"
-                @constraints effmodel begin
-                    cInp1[i in 1:nI],   # first constraint on inputs
-                       inp₀[i] >= sum(θ[z]*inp[z,i] for z in 1:nDMUs)
-                    cInp2[i in 1:nI],   # second constraint on inputs
-                       inp₀[i] >= sum(μ[z]*inp[z,i] for z in 1:nDMUs)
-                    cGO1[j in 1:nGO],   # first constraint on good outputs
-                       λ * gO₀[j] <= sum(θ[z]*gO[z,j] for z in 1:nDMUs)
-                    cBO1[j in 1:nBO],   # first constraint on bad outputs
-                      λ * bO₀[j] >= sum(θ[z]*bO[z,j] for z in 1:nDMUs)
-                    cGO2[j in 1:nGO],   # second constraint on good outputs
-                      λ * gO₀[j] <= sum(μ[z]*gO[z,j] for z in 1:nDMUs)
-                    cBO2[j in 1:nBO],   # second constraint on bad outputs
-                      λ * bO₀[j] <= sum(μ[z]*bO[z,j] for z in 1:nDMUs)
-                end
-            elseif retToScale == "variable"
-            @constraints effmodel begin
+            @NLconstraints effmodel begin
                 cInp1[i in 1:nI],   # first constraint on inputs
-                   inp₀[i] >= sum(θ[z]*inp[z,i] for z in 1:nDMUs)
+                   λ^dirGI * inp₀[i] >= sum(θ[z]*inp[z,i] for z in 1:nDMUs)
+                cInp1b[i in 1:nbI],   # first constraint on inputs
+                   λ^dirBI * bInp₀[i] <= sum(θ[z]*bInp[z,i] for z in 1:nDMUs)
                 cInp2[i in 1:nI],   # second constraint on inputs
-                   inp₀[i] >= sum(μ[z]*inp[z,i] for z in 1:nDMUs)
+                   λ^dirGI * inp₀[i] >= sum(μ[z]*inp[z,i] for z in 1:nDMUs)
+                cInp2b[i in 1:nbI],   # second constraint on inputs
+                   λ^dirBI * bInp₀[i] >= sum(μ[z]*bInp[z,i] for z in 1:nDMUs)
                 cGO1[j in 1:nGO],   # first constraint on good outputs
-                   λ * gO₀[j] <= sum(θ[z]*gO[z,j] for z in 1:nDMUs)
+                   λ^dirGO * gO₀[j] <= sum(θ[z]*gO[z,j] for z in 1:nDMUs)
                 cBO1[j in 1:nBO],   # first constraint on bad outputs
-                  λ * bO₀[j] >= sum(θ[z]*bO[z,j] for z in 1:nDMUs)
+                   λ^dirBO * bO₀[j] >= sum(θ[z]*bO[z,j] for z in 1:nDMUs)
                 cGO2[j in 1:nGO],   # second constraint on good outputs
-                  λ * gO₀[j] <= sum(μ[z]*gO[z,j] for z in 1:nDMUs)
+                   λ^dirGO * gO₀[j] <= sum(μ[z]*gO[z,j] for z in 1:nDMUs)
                 cBO2[j in 1:nBO],   # second constraint on bad outputs
-                  λ * bO₀[j] <= sum(μ[z]*bO[z,j] for z in 1:nDMUs)
-                sumtheta,
-                  sum(θ[z] for z in 1:1:nDMUs) == 1
-                summu,
-                  sum(μ[z] for z in 1:1:nDMUs) == 1
+                   λ^dirBO * bO₀[j] <= sum(μ[z]*bO[z,j] for z in 1:nDMUs)
             end
-            else
-                @error "Unknow returns to scale type."
+            if retToScale == "variable"
+                @NLconstraints effmodel begin
+                    sumtheta,
+                      sum(θ[z] for z in 1:1:nDMUs) == 1
+                    summu,
+                      sum(μ[z] for z in 1:1:nDMUs) == 1
+                end
             end
 
             # Defining objective
@@ -123,26 +119,8 @@ function efficiencyScores(inputs,goodOutputs,badOutputs,data;
             #println("*******************************************************************")
             #println("** Solutions for the $(dmus[dmuIdx]) decision maker unit for period $(period) **")
             if (status == MOI.OPTIMAL || status == MOI.LOCALLY_SOLVED || status == MOI.TIME_LIMIT) && has_values(effmodel)
-                #if (status == MOI.OPTIMAL)
-                #    println("** Problem solved correctly **")
-                #else
-                #    println("** Problem returned a (possibly suboptimal) solution **")
-                #end
-                #println("- Objective value: ", objective_value(effmodel))
-                #println("- Optimal thetas:")
-                #optθ = value.(θ)
-                #[println("$(dmus[z]): $(optθ[z])") for z in 1:nDMUs]
-                #println("- Optimal mus:")
-                #optμ = value.(μ)
-                #[println("$(dmus[z]): $(optμ[z])") for z in 1:nDMUs]
-                #optλ = value(λ)
-                #println("λ: $(optλ)")
                 λs_convex[dmuIdx,pIdx] = value(λ)
-                #println("- Dual of the first contraint on bad output:")
-                #[println("$(badOutputs[j]) = $(shadow_price(cBO1[j]))") for j in 1:nBO]
             else
-                #println("The model was not solved correctly.")
-                #println(status)
                 λs_convex[dmuIdx,pIdx] = missing
             end
 
@@ -182,5 +160,4 @@ function efficiencyScores(inputs,goodOutputs,badOutputs,data;
     end
     return λs, λs_convex, λs_nonconvex, nonConvTest_value, nonConvTest
 end
-
 end # module
