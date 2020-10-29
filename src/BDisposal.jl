@@ -2,7 +2,7 @@ module BDisposal
 
 using DataFrames, JuMP, Ipopt, GLPK, AmplNLWriter
 
-export efficiencyScores
+export efficiencyScores, prodIndex
 
 # Define the function that compute the efficiency measures
 """
@@ -29,7 +29,7 @@ distance to the production frontier, i.e. their degree of efficiency.
 * Only the static efficiency analysis is implemented at the moment
 """
 function efficiencyScores(inputs,goodOutputs,badOutputs,data;
-                                   retToScale="constant",effAnalysisType="static",formattedOutput=false,
+                                   retToScale="constant",formattedOutput=false,
                                    badInputs=[],prodStructure="additive",
                                    dirGI=0,dirBI=0,dirGO=1,dirBO=-1,
                                    startθ=0,startμ=0,startλ=1.1)
@@ -62,25 +62,16 @@ function efficiencyScores(inputs,goodOutputs,badOutputs,data;
             bInp₀ = nbI > 0 ? bInp[dmuIdx,:] : []
 
             # CONVEX analysis....
-            λs_convex[dmuIdx,pIdx] = convexProblem(inp₀,gO₀,bO₀,bInp₀,inp,gO,bO,bInp;
+            λs_convex[dmuIdx,pIdx] = problem(inp₀,bInp₀,gO₀,bO₀,inp,bInp,gO,bO;
                                         retToScale=retToScale,prodStructure=prodStructure,
-                                        dirGI=dirGI,dirBI=dirBI,dirGO=dirGO,dirBO=dirBO,
-                                        startθ=startθ,startμ=startμ,startλ=startλ)
+                                        convexAssumption=true,
+                                        directions=(dirGI,dirBI,dirGO,dirBO),
+                                        startValues=(startθ,startμ,startλ))
 
             # NON Convex analysis
-            gO_ratio  =  gO ./ gO₀'
-            bO_ratio  =  bO ./ bO₀'
-            inp_ratio = inp₀' ./ inp
-
-            if retToScale == "constant"
-                normalFrontierDistances   = [minimum(inp_ratio[z,:]) * minimum(hcat(gO_ratio,bO_ratio)[z,:]) for z in 1:nDMUs]
-                bFrontierDistances        = [minimum(inp_ratio[z,:]) * minimum(gO_ratio[z,:]) * (minimum(gO_ratio[z,:]) >= minimum(bO_ratio[z,:])) for z in 1:nDMUs]
-            else
-                normalFrontierDistances   = [minimum(inp_ratio[z,:]) * minimum(hcat(gO_ratio,bO_ratio)[z,:] * ( minimum(inp_ratio[z,:]) >= (1.0 - eps()) ) ) for z in 1:nDMUs]
-                bFrontierDistances        = [minimum(inp_ratio[z,:]) * minimum(gO_ratio[z,:]) * (minimum(gO_ratio[z,:]) >= minimum(bO_ratio[z,:]) &&  minimum(inp_ratio[z,:]) >= (1.0 - eps())    ) for z in 1:nDMUs]
-            end
-            λs_nonconvex[dmuIdx,pIdx] = min(maximum(normalFrontierDistances),maximum(bFrontierDistances))
-
+            λs_nonconvex[dmuIdx,pIdx] = problem(inp₀,bInp₀,gO₀,bO₀,inp,bInp,gO,bO;
+                                        retToScale=retToScale,prodStructure=prodStructure,
+                                        convexAssumption=false)
         end # end of each dmu
     end # endof each period
 
@@ -104,13 +95,114 @@ function efficiencyScores(inputs,goodOutputs,badOutputs,data;
     return λs, λs_convex, λs_nonconvex, nonConvTest_value, nonConvTest
 end
 
-function convexProblem(inp₀,gO₀,bO₀,bInp₀,inp,gO,bO,bInp;
+
+function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3},bI::Array{Float64,3}=Array{Float64}(undef, (size(gI,1),0,size(gI,3)));
+                   retToScale="constant",prodStructure="multiplicative",convexAssumption=true,
+                   startθ=0,startμ=0,startλ=1.1)
+
+    nDMUs = size(gI,1)
+    nPer = size(gI,3)
+    prodIndexes = Array{Float64}(undef, (size(gI,1),nPer-1))
+    startValues = (startθ,startμ,startλ)
+    for t in 1:nPer-1
+        gIₜ = gI[:,:,t]
+        gIᵤ = gI[:,:,t+1]
+        bIₜ = bI[:,:,t]
+        bIᵤ = bI[:,:,t+1]
+        gOₜ = gO[:,:,t]
+        gOᵤ = gO[:,:,t+1]
+        bOₜ = bO[:,:,t]
+        bOᵤ = bO[:,:,t+1]
+        dirGI = prodStructure == "multiplicative" ? (-1,0,0,0) : (1,0,0,0)
+        dirBI = prodStructure == "multiplicative" ? (0,-1,0,0) : (0,1,0,0)
+        dirGO = prodStructure == "multiplicative" ? (0,0,1,0)  : (0,0,1,0)
+        dirBO = prodStructure == "multiplicative" ? (0,0,0,-1) : (0,0,0,-1)
+        for z in 1:nDMUs
+            gIₜ₀ = gIₜ[z,:]
+            bIₜ₀ = bIₜ[z,:]
+            gOₜ₀ = gOₜ[z,:]
+            bOₜ₀ = bOₜ[z,:]
+            gIᵤ₀ = gIᵤ[z,:]
+            bIᵤ₀ = bIᵤ[z,:]
+            gOᵤ₀ = gOᵤ[z,:]
+            bOᵤ₀ = bOᵤ[z,:]
+
+            idx_gi_t̃ = problem(gIᵤ₀,bIₜ₀,gOₜ₀,bOₜ₀,gIₜ,bIₜ,gOₜ,bOₜ,
+                        retToScale=retToScale,prodStructure=prodStructure,
+                        convexAssumption=convexAssumption,
+                        directions=dirGI,startValues=startValues,crossTime=true)
+            idx_gi_t = problem(gIₜ₀,bIₜ₀,gOₜ₀,bOₜ₀,gIₜ,bIₜ,gOₜ,bOₜ,
+                        retToScale=retToScale,prodStructure=prodStructure,
+                        convexAssumption=convexAssumption,
+                        directions=dirGI,startValues=startValues)
+            idx_bi_t̃ = problem(gIₜ₀,bIᵤ₀,gOₜ₀,bOₜ₀,gIₜ,bIₜ,gOₜ,bOₜ,
+                        retToScale=retToScale,prodStructure=prodStructure,
+                        convexAssumption=convexAssumption,
+                        directions=dirBI,startValues=startValues,crossTime=true)
+            idx_bi_t = problem(gIₜ₀,bIₜ₀,gOₜ₀,bOₜ₀,gIₜ,bIₜ,gOₜ,bOₜ,
+                        retToScale=retToScale,prodStructure=prodStructure,
+                        convexAssumption=convexAssumption,
+                        directions=dirBI,startValues=startValues)
+            idx_go_t̃ = problem(gIₜ₀,bIₜ₀,gOᵤ₀,bOₜ₀,gIₜ,bIₜ,gOₜ,bOₜ,
+                        retToScale=retToScale,prodStructure=prodStructure,
+                        convexAssumption=convexAssumption,
+                        directions=dirGO,startValues=startValues,crossTime=true)
+            idx_go_t = problem(gIₜ₀,bIₜ₀,gOₜ₀,bOₜ₀,gIₜ,bIₜ,gOₜ,bOₜ,
+                        retToScale=retToScale,prodStructure=prodStructure,
+                        convexAssumption=convexAssumption,
+                        directions=dirGO,startValues=startValues)
+            idx_bo_t̃ = problem(gIₜ₀,bIₜ₀,gOₜ₀,bOᵤ₀,gIₜ,bIₜ,gOₜ,bOₜ,
+                        retToScale=retToScale,prodStructure=prodStructure,
+                        convexAssumption=convexAssumption,
+                        directions=dirBO,startValues=startValues,crossTime=true)
+            idx_bo_t = problem(gIₜ₀,bIₜ₀,gOₜ₀,bOₜ₀,gIₜ,bIₜ,gOₜ,bOₜ,
+                        retToScale=retToScale,prodStructure=prodStructure,
+                        convexAssumption=convexAssumption,
+                        directions=dirBO,startValues=startValues)
+
+
+            if prodStructure == "multiplicative"
+               idx_i_t = (idx_gi_t̃/idx_gi_t) * (idx_bi_t̃/idx_bi_t)
+               idx_o_t = (idx_go_t̃/idx_go_t) * (idx_bo_t̃/idx_bo_t)
+               idx_t = idx_o_t/idx_i_t
+            else
+
+            end
+        end
+    end
+end
+
+# Dispatching to either convexProblem or nonConvexProblem
+
+
+
+
+function problem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
+                 retToScale,prodStructure,convexAssumption=true,
+                 directions=(),
+                 startValues=(),crossTime=false)
+
+     if convexAssumption
+         return convexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
+                          retToScale=retToScale,prodStructure=prodStructure,
+                          directions=directions,
+                          startValues=startValues,crossTime=crossTime)
+     else
+         return nonConvexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
+                          retToScale=retToScale,prodStructure=prodStructure,
+                          directions=directions)
+     end
+
+end
+
+function convexProblem(inp₀,bInp₀,gO₀,bO₀,inp,bInp,gO,bO;
                        retToScale,prodStructure,
-                       dirGI,dirBI,dirGO,dirBO,
-                       startθ,startμ,startλ)
+                       directions,
+                       startValues,crossTime=false)
 
    nI, nGO, nBO, nDMUs, nbI = length(inp₀), length(gO₀), length(bO₀), size(inp,1), length(bInp₀)
-
+   (dirGI,dirBI,dirGO,dirBO) = directions
+   (startθ,startμ,startλ)    = startValues
    if prodStructure == "multiplicative"
        Ipopt.amplexe() do path
            # Model declaration (efficiency model)
@@ -122,8 +214,13 @@ function convexProblem(inp₀,gO₀,bO₀,bInp₀,inp,gO,bO,bInp;
            @variables effmodel begin
                θ[z in 1:nDMUs] >= 0, (start = startθ) # thetas (nDMUs)
                μ[z in 1:nDMUs] >= 0, (start = startμ) # mus (nDMUs)
-               λ >= 1, (start = startλ)
            end
+           if !crossTime
+              @variable(effmodel, λ >= 1, start = startλ)
+           else
+              @variable(effmodel, λ, start = startλ)
+           end
+
            # Defining constraints
            @NLconstraints effmodel begin
                cgInp1[i in 1:nI],   # constraint on good inputs
@@ -183,7 +280,11 @@ function convexProblem(inp₀,gO₀,bO₀,bInp₀,inp,gO,bO,bInp;
        @variables effmodel begin
            θ[z in 1:nDMUs] >= 0 # thetas (nDMUs)
            μ[z in 1:nDMUs] >= 0 # mus (nDMUs)
-           λ  >= 0
+       end
+       if !crossTime
+          @variable(effmodel, λ >= 0)
+       else
+          @variable(effmodel, λ)
        end
        # Defining constraints
        # additive structure
@@ -233,6 +334,27 @@ function convexProblem(inp₀,gO₀,bO₀,bInp₀,inp,gO,bO,bInp;
            return missing
        end
    end # ending addictive  prodStructure
+end # ending convexProblem
+
+function nonConvexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
+                       retToScale,prodStructure,
+                       directions)
+
+    nDMUs = size(gI,1)
+
+    # TODO: consider bad inputs, consider directions, consider multiplicative/additive structure
+    gO_ratio  =  gO ./ gO₀'
+    bO_ratio  =  bO ./ bO₀'
+    gI_ratio  =  gI₀' ./ gI
+
+    if retToScale == "constant"
+        normalFrontierDistances   = [minimum(gI_ratio[z,:]) * minimum(hcat(gO_ratio,bO_ratio)[z,:]) for z in 1:nDMUs]
+        bFrontierDistances        = [minimum(gI_ratio[z,:]) * minimum(gO_ratio[z,:]) * (minimum(gO_ratio[z,:]) >= minimum(bO_ratio[z,:])) for z in 1:nDMUs]
+    else
+        normalFrontierDistances   = [minimum(gI_ratio[z,:]) * minimum(hcat(gO_ratio,bO_ratio)[z,:] * ( minimum(gI_ratio[z,:]) >= (1.0 - eps()) ) ) for z in 1:nDMUs]
+        bFrontierDistances        = [minimum(gI_ratio[z,:]) * minimum(gO_ratio[z,:]) * (minimum(gO_ratio[z,:]) >= minimum(bO_ratio[z,:]) &&  minimum(gI_ratio[z,:]) >= (1.0 - eps())    ) for z in 1:nDMUs]
+    end
+    return min(maximum(normalFrontierDistances),maximum(bFrontierDistances))
 end
 
 

@@ -17,3 +17,32 @@ dirGI=0,dirBI=0,dirGO=1,dirBO=-1, prodStructure="multiplicative")
 airportInputs,airportGoodOutputs,airportBadOutputs,airportData,retToScale="variable",formattedOutput=false,
 dirGI=0,dirBI=0,dirGO=1,dirBO=-1, prodStructure="additive")
 @test nonConvTest_value_vrs[3,3]  ≈ 7.432043216538459
+
+# Aitport data test ...
+airportData = CSV.read(joinpath(@__DIR__,"data","airports.csv"),DataFrame; delim=';',copycols=true)
+airportGoodInputs  = ["employees","totalCosts"]
+airportBadInputs   = []
+airportGoodOutputs = ["passengers"]
+airportBadOutputs  = ["co2emissions"]
+sort!(airportData, [:period, :dmu]) # sort data by period and dmu
+periods = unique(airportData.period)
+dmus    = unique(airportData.dmu)
+
+nGI, nBI, nGO, nBO, nPer, nDMUs,  = length(airportGoodInputs), length(airportBadInputs), length(airportGoodOutputs), length(airportBadOutputs), length(periods),length(dmus)
+
+gI = Array{Float64}(undef, (nDMUs,nGI,nPer))
+bI = Array{Float64}(undef, (nDMUs,nBI,nPer))
+gO = Array{Float64}(undef, (nDMUs,nGO,nPer))
+bO = Array{Float64}(undef, (nDMUs,nBO,nPer))
+
+for (p,period) in enumerate(periods)
+    periodData = airportData[airportData.period .== period,:]
+    gI[:,:,p] = convert(Matrix{Float64},periodData[:,airportGoodInputs])
+    if nBI > 0 begin bI[:,:,p] = convert(Matrix{Float64},periodData[:,airportBadInputs]) end
+    gO[:,:,p] = convert(Matrix{Float64},periodData[:,airportGoodOutputs])
+    bO[:,:,p] = convert(Matrix{Float64},periodData[:,airportBadOutputs]) end
+end
+
+prodIndices = prodIndex(gI,gO,bO,bI;
+                   retToScale="constant",prodStructure="additive",convexAssumption=true,
+                   startθ=0,startμ=0,startλ=1.1)
