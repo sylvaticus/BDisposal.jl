@@ -102,8 +102,9 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
 
     nDMUs = size(gI,1)
     nPer = size(gI,3)
-    prodIndexes = Array{Float64}(undef, (size(gI,1),nPer-1))
     startValues = (startθ,startμ,startλ)
+    prodIndexes = Array{Union{Float64,Missing}}(undef, (size(gI,1),nPer-1))
+
     for t in 1:nPer-1
         gIₜ = gI[:,:,t]
         gIᵤ = gI[:,:,t+1]
@@ -127,6 +128,7 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
             gOᵤ₀ = gOᵤ[z,:]
             bOᵤ₀ = bOᵤ[z,:]
 
+            # t...
             idx_gi_t̃ = problem(gIᵤ₀,bIₜ₀,gOₜ₀,bOₜ₀,gIₜ,bIₜ,gOₜ,bOₜ,
                         retToScale=retToScale,prodStructure=prodStructure,
                         convexAssumption=convexAssumption,
@@ -160,16 +162,63 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
                         convexAssumption=convexAssumption,
                         directions=dirBO,startValues=startValues)
 
+            # u...
+            idx_gi_u = problem(gIᵤ₀,bIᵤ₀,gOᵤ₀,bOᵤ₀,gIᵤ,bIᵤ,gOᵤ,bOᵤ,
+                        retToScale=retToScale,prodStructure=prodStructure,
+                        convexAssumption=convexAssumption,
+                        directions=dirGI,startValues=startValues)
+            idx_gi_ũ = problem(gIₜ₀,bIᵤ₀,gOᵤ₀,bOᵤ₀,gIᵤ,bIᵤ,gOᵤ,bOᵤ,
+                        retToScale=retToScale,prodStructure=prodStructure,
+                        convexAssumption=convexAssumption,
+                        directions=dirGI,startValues=startValues,crossTime=true)
+            idx_bi_u = problem(gIᵤ₀,bIᵤ₀,gOᵤ₀,bOᵤ₀,gIᵤ,bIᵤ,gOᵤ,bOᵤ,
+                        retToScale=retToScale,prodStructure=prodStructure,
+                        convexAssumption=convexAssumption,
+                        directions=dirBI,startValues=startValues)
+            idx_bi_ũ = problem(gIᵤ₀,bIₜ₀,gOᵤ₀,bOᵤ₀,gIᵤ,bIᵤ,gOᵤ,bOᵤ,
+                        retToScale=retToScale,prodStructure=prodStructure,
+                        convexAssumption=convexAssumption,
+                        directions=dirBI,startValues=startValues,crossTime=true)
+            idx_go_u = problem(gIᵤ₀,bIᵤ₀,gOᵤ₀,bOᵤ₀,gIᵤ,bIᵤ,gOᵤ,bOᵤ,
+                        retToScale=retToScale,prodStructure=prodStructure,
+                        convexAssumption=convexAssumption,
+                        directions=dirGO,startValues=startValues)
+            idx_go_ũ = problem(gIᵤ₀,bIᵤ₀,gOₜ₀,bOᵤ₀,gIᵤ,bIᵤ,gOᵤ,bOᵤ,
+                        retToScale=retToScale,prodStructure=prodStructure,
+                        convexAssumption=convexAssumption,
+                        directions=dirGO,startValues=startValues,crossTime=true)
+            idx_bo_u = problem(gIᵤ₀,bIᵤ₀,gOᵤ₀,bOᵤ₀,gIᵤ,bIᵤ,gOᵤ,bOᵤ,
+                        retToScale=retToScale,prodStructure=prodStructure,
+                        convexAssumption=convexAssumption,
+                        directions=dirBO,startValues=startValues)
+            idx_bo_ũ = problem(gIᵤ₀,bIᵤ₀,gOᵤ₀,bOₜ₀,gIᵤ,bIᵤ,gOᵤ,bOᵤ,
+                        retToScale=retToScale,prodStructure=prodStructure,
+                        convexAssumption=convexAssumption,
+                        directions=dirBO,startValues=startValues,crossTime=true)
 
             if prodStructure == "multiplicative"
                idx_i_t = (idx_gi_t̃/idx_gi_t) * (idx_bi_t̃/idx_bi_t)
                idx_o_t = (idx_go_t̃/idx_go_t) * (idx_bo_t̃/idx_bo_t)
-               idx_t = idx_o_t/idx_i_t
-            else
+               idx_t   = idx_o_t/idx_i_t
+               idx_i_u = (idx_gi_u/idx_gi_ũ) * (idx_bi_u/idx_bi_ũ)
+               idx_o_u = (idx_go_u/idx_go_ũ) * (idx_bo_u/idx_bo_ũ)
+               idx_u   = idx_o_u/idx_i_u
+               idx     = (idx_t * idx_u)^(1/2)
 
+            else
+                idx_i_t = (idx_gi_t̃ - idx_gi_t) + (idx_bi_t̃ - idx_bi_t)
+                idx_o_t = (idx_go_t - idx_go_t̃) + (idx_bo_t - idx_bo_t̃)
+                idx_t   = idx_o_t - idx_i_t
+                idx_i_u = (idx_gi_u - idx_gi_ũ) + (idx_bi_u - idx_bi_ũ)
+                idx_o_u = (idx_go_ũ - idx_go_u) + (idx_bo_ũ - idx_bo_u)
+                idx_u   = idx_o_u - idx_i_u
+                idx     = (idx_t + idx_u) / 2
             end
+
+            prodIndexes[z,t] = idx
         end
     end
+    return prodIndexes
 end
 
 # Dispatching to either convexProblem or nonConvexProblem
