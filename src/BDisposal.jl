@@ -28,49 +28,42 @@ distance to the production frontier, i.e. their degree of efficiency.
 # Notes:
 * Only the static efficiency analysis is implemented at the moment
 """
-function efficiencyScores(inputs,goodOutputs,badOutputs,data;
-                                   retToScale="constant",formattedOutput=false,
-                                   badInputs=[],prodStructure="additive",
-                                   dirGI=0,dirBI=0,dirGO=1,dirBO=-1,
-                                   startθ=0,startμ=0,startλ=1.1)
+#function efficiencyScores(inputs,goodOutputs,badOutputs,data;
+#                                   retToScale="constant",formattedOutput=false,
+#                                   badInputs=[],prodStructure="additive",
+#                                   dirGI=0,dirBI=0,dirGO=1,dirBO=-1,
+#                                   startθ=0,startμ=0,startλ=1.1)
+
+
+function efficiencyScores(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3},bI::Array{Float64,3}=Array{Float64}(undef, (size(gI,1),0,size(gI,3)));
+                          retToScale="constant",prodStructure="additive",
+                          dirGI=0,dirBI=0,dirGO=1,dirBO=-1,
+                          startθ=0,startμ=0,startλ=1.1)
 
     # Data processing
-    sort!(data, [:period, :dmu]) # sort data by period and dmu
-    periods = unique(data.period)
-    dmus    = unique(data.dmu)
-    nI, nGO, nBO, nPer, nDMUs, nbI = length(inputs), length(goodOutputs), length(badOutputs), length(periods),length(dmus), length(badInputs)
-
+    nDMUs, nPer, nGI, nBI, nGO, nBO = size(gI,1), size(gI,3), size(gI,2), size(bI,2), size(gO,2), size(bO,2)
     λs_convex    = Array{Union{Missing,Float64,String}}(undef,nDMUs,nPer) # Output matrix hosting the results (nDMUs,nPer)
     λs_nonconvex = Array{Union{Missing,Float64,String}}(undef,nDMUs,nPer) # Output matrix hosting the results (nDMUs,nPer)
 
     # Loping over the periods
-    for (pIdx,period) in enumerate(periods)
-        #period = periods[1]
-        #pIdx = 1
-        periodData = data[data.period .== period,:]
-        inp = convert(Matrix{Float64},periodData[:,inputs])
-        gO  = convert(Matrix{Float64},periodData[:,goodOutputs])
-        bO  = convert(Matrix{Float64},periodData[:,badOutputs])
-        bInp  = convert(Matrix{Float64},periodData[:,badInputs])
+    for t in 1:nPer
+        gIₜ = gI[:,:,t]; bIₜ = bI[:,:,t]; gOₜ = gO[:,:,t]; bOₜ = bO[:,:,t]
 
         # Solving for each dmu
-        for dmuIdx in 1:nDMUs
-            #dmuIdx = 3
-            inp₀ = inp[dmuIdx,:] # inputs of this dmu (x in the model)
-            gO₀  = gO[dmuIdx,:] # good outputs of this dmu (y in the model)
-            bO₀  = bO[dmuIdx,:] # bad outputs of this dmu (y in the model)
-            bInp₀ = nbI > 0 ? bInp[dmuIdx,:] : []
+        for z in 1:nDMUs
+            gIₜ₀ = gIₜ[z,:]; bIₜ₀ = bIₜ[z,:]; gOₜ₀ = gOₜ[z,:]; bOₜ₀ = bOₜ[z,:]
 
             # CONVEX analysis....
-            λs_convex[dmuIdx,pIdx] = problem(inp₀,bInp₀,gO₀,bO₀,inp,bInp,gO,bO;
-                                        retToScale=retToScale,prodStructure=prodStructure,
-                                        convexAssumption=true,
-                                        directions=(dirGI,dirBI,dirGO,dirBO),
-                                        startValues=(startθ,startμ,startλ))
+            λs_convex[z,t] = problem(gIₜ₀,bIₜ₀,gOₜ₀,bOₜ₀,gIₜ,bIₜ,gOₜ,bOₜ;
+                                     retToScale=retToScale,prodStructure=prodStructure,
+                                     convexAssumption=true,
+                                     directions=(dirGI,dirBI,dirGO,dirBO),
+                                     startValues=(startθ,startμ,startλ))
 
             # NON Convex analysis
-            λs_nonconvex[dmuIdx,pIdx] = problem(inp₀,bInp₀,gO₀,bO₀,inp,bInp,gO,bO;
+            λs_nonconvex[z,t] = problem(gIₜ₀,bIₜ₀,gOₜ₀,bOₜ₀,gIₜ,bIₜ,gOₜ,bOₜ;
                                         retToScale=retToScale,prodStructure=prodStructure,
+                                        directions=(dirGI,dirBI,dirGO,dirBO),
                                         convexAssumption=false)
         end # end of each dmu
     end # endof each period
@@ -79,19 +72,6 @@ function efficiencyScores(inputs,goodOutputs,badOutputs,data;
     nonConvTest       = nonConvTest_value .< (1.0 - eps())
     λs = min.(λs_nonconvex,λs_convex)
 
-    if formattedOutput
-        # Add periods as headers and decision making names as first column
-        λs = vcat(periods',λs)
-        λs = hcat(vcat("",dmus),λs)
-        λs_convex = vcat(periods',λs_convex)
-        λs_convex = hcat(vcat("",dmus),λs_convex)
-        λs_nonconvex = vcat(periods',λs_nonconvex)
-        λs_nonconvex = hcat(vcat("",dmus),λs_nonconvex)
-        nonConvTest_value = vcat(periods',nonConvTest_value)
-        nonConvTest_value = hcat(vcat("",dmus),nonConvTest_value)
-        nonConvTest = vcat(periods',nonConvTest)
-        nonConvTest = hcat(vcat("",dmus),nonConvTest)
-    end
     return λs, λs_convex, λs_nonconvex, nonConvTest_value, nonConvTest
 end
 
@@ -222,10 +202,6 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
 end
 
 # Dispatching to either convexProblem or nonConvexProblem
-
-
-
-
 function problem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
                  retToScale,prodStructure,convexAssumption=true,
                  directions=(),
@@ -390,11 +366,13 @@ function nonConvexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
                        directions)
 
     nDMUs = size(gI,1)
+    (dirGI,dirBI,dirGO,dirBO) = directions
 
     # TODO: consider bad inputs, consider directions, consider multiplicative/additive structure
+    gI_ratio  =  gI₀' ./ gI
     gO_ratio  =  gO ./ gO₀'
     bO_ratio  =  bO ./ bO₀'
-    gI_ratio  =  gI₀' ./ gI
+
 
     if retToScale == "constant"
         normalFrontierDistances   = [minimum(gI_ratio[z,:]) * minimum(hcat(gO_ratio,bO_ratio)[z,:]) for z in 1:nDMUs]
