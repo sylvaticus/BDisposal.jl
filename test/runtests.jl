@@ -2,10 +2,10 @@
 using Test, DataFrames, CSV, BDisposal
 println("Testing BDisposal...")
 
-# Aitport data test ...
+# Aitport data test with only one input category...
 airportData = CSV.read(joinpath(@__DIR__,"data","airports.csv"),DataFrame; delim=';',copycols=true)
-airportGoodInputs  = ["employees"]
-airportBadInputs   = ["totalCosts"]
+airportGoodInputs  = ["employees","totalCosts"]
+airportBadInputs   = []
 airportGoodOutputs = ["passengers"]
 airportBadOutputs  = ["co2emissions"]
 sort!(airportData, [:period, :dmu]) # sort data by period and dmu
@@ -22,9 +22,11 @@ bO = Array{Float64}(undef, (nDMUs,nBO,nPer))
 for (p,period) in enumerate(periods)
     periodData = airportData[airportData.period .== period,:]
     gI[:,:,p] = convert(Matrix{Float64},periodData[:,airportGoodInputs])
-    if nBI > 0 begin bI[:,:,p] = convert(Matrix{Float64},periodData[:,airportBadInputs]) end
+    if nBI > 0
+         bI[:,:,p] = convert(Matrix{Float64},periodData[:,airportBadInputs])
+    end
     gO[:,:,p] = convert(Matrix{Float64},periodData[:,airportGoodOutputs])
-    bO[:,:,p] = convert(Matrix{Float64},periodData[:,airportBadOutputs]) end
+    bO[:,:,p] = convert(Matrix{Float64},periodData[:,airportBadOutputs])
 end
 
 # Call the function to get the efficiency measurements for constant returns to scale
@@ -38,7 +40,7 @@ airportInputs,airportGoodOutputs,airportBadOutputs,airportData,retToScale="varia
 dirGI=0,dirBI=0,dirGO=1,dirBO=-1, prodStructure="additive")
 @test nonConvTest_value_vrs[3,3]  ≈ 7.432043216538459
 
-# Aitport data test ...
+# Aitport data test with bad inputs separated...
 airportData = CSV.read(joinpath(@__DIR__,"data","airports.csv"),DataFrame; delim=';',copycols=true)
 airportGoodInputs  = ["employees"]
 airportBadInputs   = ["totalCosts"]
@@ -58,9 +60,11 @@ bO = Array{Float64}(undef, (nDMUs,nBO,nPer))
 for (p,period) in enumerate(periods)
     periodData = airportData[airportData.period .== period,:]
     gI[:,:,p] = convert(Matrix{Float64},periodData[:,airportGoodInputs])
-    if nBI > 0 begin bI[:,:,p] = convert(Matrix{Float64},periodData[:,airportBadInputs]) end
+    if nBI > 0
+        bI[:,:,p] = convert(Matrix{Float64},periodData[:,airportBadInputs])
+    end
     gO[:,:,p] = convert(Matrix{Float64},periodData[:,airportGoodOutputs])
-    bO[:,:,p] = convert(Matrix{Float64},periodData[:,airportBadOutputs]) end
+    bO[:,:,p] = convert(Matrix{Float64},periodData[:,airportBadOutputs])
 end
 
 prodIndices = prodIndex(gI,gO,bO,bI;
