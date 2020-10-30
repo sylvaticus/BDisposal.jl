@@ -48,12 +48,14 @@ function efficiencyScores(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Fl
     # Loping over the periods
     for t in 1:nPer
         gIₜ = gI[:,:,t]; gOₜ = gO[:,:,t]; bOₜ = bO[:,:,t]
-        bIₜ = nBI > 0 ? bI[:,:,t] : Array{Float64}(undef, 0,0)
+        #bIₜ = nBI > 0 ? bI[:,:,t] : Array{Float64}(undef, 0,0)
+        bIₜ = bI[:,:,t]
 
         # Solving for each dmu
         for z in 1:nDMUs
             gIₜ₀ = gIₜ[z,:]; gOₜ₀ = gOₜ[z,:]; bOₜ₀ = bOₜ[z,:]
-            bIₜ₀ = nBI > 0 ? bIₜ[z,:] : Float64[]
+            #bIₜ₀ = nBI > 0 ? bIₜ[z,:] : Float64[]
+            bIₜ₀ = bIₜ[z,:]
 
             # CONVEX analysis....
             λs_convex[z,t] = problem(gIₜ₀,bIₜ₀,gOₜ₀,bOₜ₀,gIₜ,bIₜ,gOₜ,bOₜ;
