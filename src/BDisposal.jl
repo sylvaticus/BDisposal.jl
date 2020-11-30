@@ -1,6 +1,6 @@
 module BDisposal
 
-using DataFrames, JuMP, Ipopt, GLPK, AmplNLWriter
+using JuMP, Ipopt, GLPK, AmplNLWriter
 
 export efficiencyScores, prodIndex
 
