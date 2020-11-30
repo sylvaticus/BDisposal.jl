@@ -3,11 +3,11 @@ codecov: true
 language: julia
 os:
   - linux
-  - osx
+#  - osx # let's save credits
 julia:
   - nightly
   - 1.5.0
-  - 1
+#  - 1 # let's save credits
 
 notifications:
   email: false

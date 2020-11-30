@@ -14,4 +14,5 @@ makedocs(sitename="BDisposal.jl Documentation",
 )
 deploydocs(
     repo = "github.com/sylvaticus/BDisposal.jl.git",
+    devbranch = `main`
 )
