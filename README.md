@@ -6,7 +6,8 @@ Work in progress
 
 [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://sylvaticus.github.io/BDisposal.jl/stable)
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://sylvaticus.github.io/BDisposal.jl/dev)
-[![Build Status](https://travis-ci.com/sylvaticus/BDisposal.jl.svg?branch=master)](https://travis-ci.com/sylvaticus/BDisposal.jl)
+[![Build Status (Travis)](https://travis-ci.com/sylvaticus/BDisposal.jl.svg?branch=master)](https://travis-ci.com/sylvaticus/BDisposal.jl)
+[![Build status (Github Actions)](https://github.com/sylvaticus/BDisposal.jl/workflows/CI/badge.svg)](https://github.com/sylvaticus/BDisposal.jl/actions)
 [![codecov.io](http://codecov.io/github/sylvaticus/BDisposal.jl/coverage.svg?branch=master)](http://codecov.io/github/sylvaticus/BDisposal.jl?branch=master)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/sylvaticus/BDisposal.jl/master)
 
