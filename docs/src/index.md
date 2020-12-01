@@ -2,6 +2,8 @@
 
 Welcome to the documentation for the [_Non parametric productivity analysis under the B-disposal assumption_](https://github.com/sylvaticus/BDisposal.jl) package.
 
+Note: Just testing the documentation system for now. Real documentation will be added soon.
+
 ## Installation
 
 Until the BDisposal package will be registered, please use:
