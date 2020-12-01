@@ -1,12 +1,13 @@
-# ![BDisposalLogos](assets/BetaML_logo_30x30.png) BDisposal.jl Documentation
+# ![BDisposalLogos](assets/BDisposal_logo_30x30.png) BDisposal.jl Documentation
 
 Welcome to the documentation for the [_Non parametric productivity analysis under the B-disposal assumption_](https://github.com/sylvaticus/BDisposal.jl) package.
 
-Note: Just testing the documentation system for now. Real documentation will be added soon.
+The BDisposal package proposes a serie of environmental efficiency and productivity algorithms for non-parametric modelling when we relax the disposability assumption of some of the outputs and/or inputs (e.g. pollution). These efficiency and productivity measures are implemented through convex and non convex [Data Envelopment Analysis (DEA)](https://en.wikipedia.org/wiki/Data_envelopment_analysis) (aka _Frontier Efficiency Analysis_) models.
+
 
 ## Installation
 
-Until the BDisposal package will be registered, please use:
+Until the BDisposal package is registered, please use:
 * `] add git@github.com/sylvaticus/BDisposal.jl.git`
 Once the BDisposal package will be included in the standard Julia register, install it with:
 * `] add BDisposal.jl`
@@ -19,10 +20,10 @@ using BDisposal
 
 ## Usage
 
-The two functions
+The package provide two functions.
 
-- [**`Efficiency Scores`**](efficiencyScores.html): Compute efficiency scores;
-- [**`Production Indexes`**](prodIndex.html): Compute Productivity Indexes;
+- [**`efficiencyScores()`**](efficiencyScores.html): Compute efficiency scores;
+- [**`prodIndex()`**](prodIndex.html): Compute Productivity Indexes;
 
 ## Examples
 
@@ -30,6 +31,33 @@ The two functions
 # Load Modules
 using BDisposal
 ```
+## Other packages
+
+This is a list of other Julia packages that use classical DEA method, although without relaxing the disposability assumption.
+
+- [DataEnvelopmentAnalysis.jl](https://github.com/javierbarbero/DataEnvelopmentAnalysis.jl)
+- [FrontierEfficiencyAnalysis.jl](https://github.com/wen-chih/FrontierEfficiencyAnalysis.jl)
+- [SearchRef.jl](https://github.com/wen-chih/SearchRef.jl)
+- [JuMP4DEA.jl](https://github.com/henry8527/JuMP4DEA.jl)
+
+<!-- - [Various code for DEA](https://github.com/wen-chih/code-for-DEA) -->
+
+## References
+
+
+- Abad, A. (2020) [Environmental Efficiency and Productivity Analysis](https://hal.inrae.fr/hal-03032038), _HAL_, 03032038.
+- Abad, A., P. Ravelojaona (2020a) [Pollution-adjusted Productivity Analysis: The Use of Malmquist and Luenberger Productivity Measures](https://doi.org/10.1002/mde.3260), _Managerial and Decision Economics_
+- Abad, A., P. Ravelojoana (2020b) A Generalization of Environmental Productivity Analysis, hal-02964799.
+- Abad, A., W. Briec (2019) On the Axiomatic of Pollution-generating Technologies: a Non-Parametric Approach, {\it European Journal of Operational Research}, 277(1), 377-390.}\
+- Abad, A. (2018) {\it Les Enseignements de la Micro-\'economie de la Production face aux Enjeux Environnementaux: Etude des Productions Jointes. Th\'eorie et Applications}, Ph.D dissertation, University of Perpignan.
+- Abad, A., P. Ravelojaona (2017) Exponential environmental productivity index and indicators, {\it Journal of Productivity Analysis}, 48(2), 147-166.\
+- Abad, A. (2015) An environmental generalised Luenberger-Hicks-Moorsteen
+productivity indicator and an environmental generalised Hicks-Moorsteen productivity index, {\it Journal of Environmental Management}, 161, 325-334.\
+
+
+
+
+
 
 ## Acknowledgements
 

@@ -28,13 +28,6 @@ distance to the production frontier, i.e. their degree of efficiency.
 # Notes:
 * Only the static efficiency analysis is implemented at the moment
 """
-#function efficiencyScores(inputs,goodOutputs,badOutputs,data;
-#                                   retToScale="constant",formattedOutput=false,
-#                                   badInputs=[],prodStructure="additive",
-#                                   dirGI=0,dirBI=0,dirGO=1,dirBO=-1,
-#                                   startθ=0,startμ=0,startλ=1.1)
-
-
 function efficiencyScores(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3},bI::Array{Float64,3}=Array{Float64}(undef, (size(gI,1),0,size(gI,3)));
                           retToScale="constant",prodStructure="additive",
                           dirGI=0,dirBI=0,dirGO=1,dirBO=-1,
@@ -79,7 +72,29 @@ function efficiencyScores(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Fl
     return λs, λs_convex, λs_nonconvex, nonConvTest_value, nonConvTest
 end
 
+"""
+  prodIndex(inputs,goodOutputs,badOutputs,data;retToScale="constant",effAnalysisType="static",formattedOutput=false)
 
+Compute efficiency scores considering the joined production of good and bad outputs.
+
+Given a set of measures of inputs, "good" ("desiderable") and "bad" ("undesiderable") outputs for different decision making units, compute their
+distance to the production frontier, i.e. their degree of efficiency.
+
+# Parameters:
+* `inputs`: The headers of the inputs (vector of strings)
+* `goodOutputs`: The headers of the good putputs (vector of strings)
+* `badOutputs`: The headers of the bad putputs (vector of strings)
+* `data`: A dataframe where the first column must have header `period`, the second one `dmu`
+   (standing for "decision making unit") and then the measures of inputs, good and bad outputs
+   with the headers as defined in the first 3 parameters
+* `retToScale`: Wheter to return to scales should be assumed `constant` (default) or `variable`
+* `effAnalysisType`: Wheter to perform a `static` (default) or `dynamic` efficiency analysis
+* `formattedOutput`: wheater the output should be formatted or not (i.e. raw output) [def: true]
+# Returns:
+* A printable matrix of the computed efficiency scores
+# Notes:
+* Only the static efficiency analysis is implemented at the moment
+"""
 function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3},bI::Array{Float64,3}=Array{Float64}(undef, (size(gI,1),0,size(gI,3)));
                    retToScale="constant",prodStructure="multiplicative",convexAssumption=true,
                    startθ=0,startμ=0,startλ=1.1)
@@ -387,6 +402,5 @@ function nonConvexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
     end
     return min(maximum(normalFrontierDistances),maximum(bFrontierDistances))
 end
-
 
 end # module
