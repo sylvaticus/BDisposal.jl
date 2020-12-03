@@ -20,10 +20,16 @@ using BDisposal
 
 ## Usage
 
-The package provide two functions.
+The BDisposal package contains two prominent components.
+First, the BDisposal package defines environmental efficiency indicators for a set of Decision Making Units (`efficiencyScores()`), computing the distance to the best environmental production procedures, i.e., to the efficient production frontier.
+Second, the BDisposal package displays environmental productivity indices (`prodIndex()`). These productivity measures are implemented for different time periods (eg., years, months etc.) or spatial units (eg., countries, cities etc.), based on the aforementioned environmental efficiency indicators.
 
-- [**`efficiencyScores()`**](efficiencyScores.html): Compute efficiency scores;
-- [**`prodIndex()`**](prodIndex.html): Compute Productivity Indexes;
+Both components can consider constant or variable returns to scale, convex or non-convex production frontiers and additive or multiplicative distance functions, and work with multiple "good" ("desirable") and "bad" ("undesirable") inputs and outputs (with undesirable inputs being optional).
+
+They are detailed in their respective pages:
+
+- [**`efficiencyScores()`**](efficiencyScores.html): Compute efficiency indicators and convexity test results;
+- [**`prodIndex()`**](prodIndex.html): Compute productivity indexes;
 
 ## Examples
 

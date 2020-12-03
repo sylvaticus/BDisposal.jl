@@ -14,10 +14,12 @@ dmus    = unique(airportData.dmu)
 
 nGI, nBI, nGO, nBO, nPer, nDMUs,  = length(airportGoodInputs), length(airportBadInputs), length(airportGoodOutputs), length(airportBadOutputs), length(periods),length(dmus)
 
-gI = Array{Float64}(undef, (nDMUs,nGI,nPer))
-bI = Array{Float64}(undef, (nDMUs,nBI,nPer))
-gO = Array{Float64}(undef, (nDMUs,nGO,nPer))
-bO = Array{Float64}(undef, (nDMUs,nBO,nPer))
+# Setting empty containers for our data
+# Each of them is a 3D matrix where the first dimension is the decision units, the second one is the individual input or output item and the third dimension is the period to which the data refer
+gI = Array{Float64}(undef, (nDMUs,nGI,nPer)) # God inputs
+bI = Array{Float64}(undef, (nDMUs,nBI,nPer)) # Bad inputs (optional)
+gO = Array{Float64}(undef, (nDMUs,nGO,nPer)) # Good outputs, aka "desiderable" outputs
+bO = Array{Float64}(undef, (nDMUs,nBO,nPer)) # Bad outputs, aka "undesiderable" outputs
 
 for (p,period) in enumerate(periods)
     periodData = airportData[airportData.period .== period,:]
@@ -30,11 +32,11 @@ for (p,period) in enumerate(periods)
 end
 
 # Call the function to get the efficiency measurements for constant returns to scale
-(λ_crs, λ_convex_crs, λ_nonconvex_crs, nonConvTest_value_crs, nonConvTest_crs) = efficiencyScores(
+(λ_crs, λ_convex_crs, λ_nonconvex_crs, nonConvTest_crs, nonConvTest_value_crs) = efficiencyScores(
 gI,gO,bO,bI,retToScale="constant", dirGI=0,dirBI=0,dirGO=1,dirBO=-1, prodStructure="multiplicative")
 @test nonConvTest_value_crs[3,2]  ≈ 1.1587129278170434
 
-(λ_vrs, λ_convex_vrs, λ_nonconvex_vrs, nonConvTest_value_vrs, nonConvTest_vrs) = efficiencyScores(
+(λ_vrs, λ_convex_vrs, λ_nonconvex_vrs, nonConvTest_vrs, nonConvTest_value_vrs) = efficiencyScores(
 gI,gO,bO,bI,retToScale="variable", dirGI=0,dirBI=0,dirGO=1,dirBO=-1, prodStructure="additive")
 @test nonConvTest_value_vrs[3,3]  ≈ 7.432043216538459
 
