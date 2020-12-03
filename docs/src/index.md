@@ -33,10 +33,100 @@ They are detailed in their respective pages:
 
 ## Examples
 
+The following example (with data from _Abad and Briec, 2019_) show how to compute the efficiency indicators and productivity indexes for 14 main French airports, where the (good) inputs considered are _employees_ and _totalCosts_ and the (single in this case) bad and good outputs are respectively (airport) _co2emissions_ and _passengers_.
+
+
 ```julia
-# Load Modules
-using BDisposal
-[....TODO...]
+using DataFrames, CSV, BDisposal
+println("Estimating French airports efficiency and productivity indexes...")
+
+# Loading airport data and preparing the data..
+# Data is stored as a  CSV files with 6 columns: period, dmu, co2emissions, passengers, employees, totalCosts
+airportData = CSV.read(joinpath(abspath("BDisposal"),"test","data","airports.csv"),DataFrame; delim=';',copycols=true)
+airportGoodInputs  = ["employees","totalCosts"]
+airportBadInputs   = []
+airportGoodOutputs = ["passengers"]
+airportBadOutputs  = ["co2emissions"]
+sort!(airportData, [:period, :dmu]) # sort data by period and dmu
+periods = unique(airportData.period)
+dmus    = unique(airportData.dmu)
+
+nGI, nBI, nGO, nBO, nPer, nDMUs,  = length(airportGoodInputs), length(airportBadInputs), length(airportGoodOutputs), length(airportBadOutputs), length(periods),length(dmus)
+
+# Setting empty containers for our data
+# Each of them is a 3D matrix where the first dimension is the decision units, the second one is the individual input or output item and the third dimension is the period to which the data refer
+gI = Array{Float64}(undef, (nDMUs,nGI,nPer)) # Good inputs
+bI = Array{Float64}(undef, (nDMUs,nBI,nPer)) # Bad inputs (optional)
+gO = Array{Float64}(undef, (nDMUs,nGO,nPer)) # Good outputs, aka "desiderable" outputs
+bO = Array{Float64}(undef, (nDMUs,nBO,nPer)) # Bad outputs, aka "undesiderable" outputs
+# Transferring data to the containers
+for (p,period) in enumerate(periods)
+    periodData = airportData[airportData.period .== period,:]
+    gI[:,:,p] = convert(Matrix{Float64},periodData[:,airportGoodInputs])
+    if nBI > 0
+         bI[:,:,p] = convert(Matrix{Float64},periodData[:,airportBadInputs])
+    end
+    gO[:,:,p] = convert(Matrix{Float64},periodData[:,airportGoodOutputs])
+    bO[:,:,p] = convert(Matrix{Float64},periodData[:,airportBadOutputs])
+end
+
+# Call the function to get the efficiency measurements for constant returns to scale
+(λ, λ_convex, λ_nonconvex, nonConvTest, nonConvTest_value) = efficiencyScores(
+gI,gO,bO,bI,retToScale="constant", dirGI=0,dirBI=0,dirGO=1,dirBO=-1, prodStructure="multiplicative")
+
+
+# Add periods as headers and decision making names as first column in order to show the data
+# Efficiency Indexes
+λ = hcat(dmus,λ)
+λdf = DataFrame(λ , Symbol.(vcat("DMU",periods)))
+```
+
+```
+│ Row │ DMU                      │ 2007    │ 2008    │ 2009    │ 2010    │ 2011    │
+│     │ Any                      │ Any     │ Any     │ Any     │ Any     │ Any     │
+├─────┼──────────────────────────┼─────────┼─────────┼─────────┼─────────┼─────────┤
+│ 1   │ Beauvais                 │ 1.0     │ 1.0     │ 1.0     │ 1.0     │ 1.0     │
+│ 2   │ Bordeaux-Mérignac        │ 1.0     │ 1.0     │ 1.0     │ 1.0     │ 1.0     │
+│ 3   │ Bâle-Mulhouse            │ 1.08295 │ 1.08777 │ 1.17694 │ 1.15278 │ 1.0     │
+│ 4   │ Lille                    │ 1.13183 │ 1.15032 │ 1.06293 │ 1.0     │ 1.0     │
+│ 5   │ Lyon-Saint Exupéry       │ 1.09567 │ 1.07909 │ 1.06901 │ 1.10468 │ 1.00911 │
+│ 6   │ Marseille-Provence       │ 1.00071 │ 1.04287 │ 1.0     │ 1.0     │ 1.0     │
+│ 7   │ Montpellier-Méditerranée │ 1.0     │ 1.0     │ 1.0     │ 1.10249 │ 1.14045 │
+│ 8   │ Nantes-Atlantique        │ 1.09003 │ 1.05685 │ 1.0013  │ 1.05295 │ 1.07531 │
+│ 9   │ Nice-Côte d'azur         │ 1.0     │ 1.02201 │ 1.02562 │ 1.08272 │ 1.02654 │
+│ 10  │ Paris CDG                │ 1.14695 │ 1.14915 │ 1.15329 │ 1.17032 │ 1.17137 │
+│ 11  │ Paris ORY                │ 1.21574 │ 1.22947 │ 1.21526 │ 1.22424 │ 1.21444 │
+│ 12  │ Strasbourg-Entzheim      │ 1.0     │ 1.14408 │ 1.13534 │ 1.23498 │ 1.27062 │
+│ 13  │ Toulouse-Blagnac         │ 1.0     │ 1.0     │ 1.0     │ 1.01143 │ 1.0     │
+```
+```julia
+# Non-convexity test
+nc_test = hcat(dmus,nonConvTest)
+nc_test_df = DataFrame(nc_test , Symbol.(vcat("DMU",periods)))
+```
+
+```
+│ Row │ DMU                      │ 2007 │ 2008 │ 2009 │ 2010 │ 2011 │
+│     │ Any                      │ Any  │ Any  │ Any  │ Any  │ Any  │
+├─────┼──────────────────────────┼──────┼──────┼──────┼──────┼──────┤
+│ 1   │ Beauvais                 │ 1    │ 1    │ 1    │ 1    │ 1    │
+│ 2   │ Bordeaux-Mérignac        │ 1    │ 1    │ 1    │ 1    │ 1    │
+│ 3   │ Bâle-Mulhouse            │ 0    │ 0    │ 0    │ 0    │ 1    │
+│ 4   │ Lille                    │ 0    │ 0    │ 0    │ 1    │ 1    │
+│ 5   │ Lyon-Saint Exupéry       │ 1    │ 1    │ 1    │ 0    │ 1    │
+│ 6   │ Marseille-Provence       │ 1    │ 0    │ 1    │ 1    │ 1    │
+│ 7   │ Montpellier-Méditerranée │ 1    │ 1    │ 1    │ 1    │ 1    │
+│ 8   │ Nantes-Atlantique        │ 0    │ 0    │ 1    │ 1    │ 1    │
+│ 9   │ Nice-Côte d'azur         │ 1    │ 1    │ 1    │ 1    │ 1    │
+│ 10  │ Paris CDG                │ 0    │ 0    │ 0    │ 0    │ 0    │
+│ 11  │ Paris ORY                │ 0    │ 0    │ 0    │ 0    │ 0    │
+│ 12  │ Strasbourg-Entzheim      │ 1    │ 1    │ 1    │ 1    │ 1    │
+│ 13  │ Toulouse-Blagnac         │ 1    │ 1    │ 1    │ 0    │ 1    │
+```
+```julia
+prodIndexes = prodIndex(gI,gO,bO;
+                   retToScale="constant",prodStructure="multiplicative",convexAssumption=true,
+                   startθ=0,startμ=0,startλ=1.1)
 ```
 ## Other packages
 

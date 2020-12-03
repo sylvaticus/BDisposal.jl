@@ -16,7 +16,7 @@ nGI, nBI, nGO, nBO, nPer, nDMUs,  = length(airportGoodInputs), length(airportBad
 
 # Setting empty containers for our data
 # Each of them is a 3D matrix where the first dimension is the decision units, the second one is the individual input or output item and the third dimension is the period to which the data refer
-gI = Array{Float64}(undef, (nDMUs,nGI,nPer)) # God inputs
+gI = Array{Float64}(undef, (nDMUs,nGI,nPer)) # Good inputs
 bI = Array{Float64}(undef, (nDMUs,nBI,nPer)) # Bad inputs (optional)
 gO = Array{Float64}(undef, (nDMUs,nGO,nPer)) # Good outputs, aka "desiderable" outputs
 bO = Array{Float64}(undef, (nDMUs,nBO,nPer)) # Bad outputs, aka "undesiderable" outputs
