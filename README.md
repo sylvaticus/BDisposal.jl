@@ -1,23 +1,23 @@
 # BDisposal.jl
-Non parametric productivity analysis under the B-disposal assumption
 
-
-Work in progress
+Non parametric efficiency and productivity analysis through the _B-disposal_ scheme
 
 [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://sylvaticus.github.io/BDisposal.jl/stable)
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://sylvaticus.github.io/BDisposal.jl/dev)
-[![Build Status (Travis)](https://travis-ci.com/sylvaticus/BDisposal.jl.svg?branch=master)](https://travis-ci.com/sylvaticus/BDisposal.jl)
 [![Build status (Github Actions)](https://github.com/sylvaticus/BDisposal.jl/workflows/CI/badge.svg)](https://github.com/sylvaticus/BDisposal.jl/actions)
-[![codecov.io](http://codecov.io/github/sylvaticus/BDisposal.jl/coverage.svg?branch=master)](http://codecov.io/github/sylvaticus/BDisposal.jl?branch=master)
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/sylvaticus/BDisposal.jl/master)
+[![codecov.io](http://codecov.io/github/sylvaticus/BDisposal.jl/coverage.svg?branch=main)](http://codecov.io/github/sylvaticus/BDisposal.jl?branch=main)
 
+<img src="docs/src/assets//BDisposal_logo.png" width="300" valign="top"  ALIGN="left"  />
+The BDisposal package proposes a serie of environmental efficiency and productivity algorithms for non-parametric modelling when we relax the disposability assumption of some of the outputs and/or inputs (e.g. pollution). These efficiency and productivity measures are implemented through convex and non-convex [Data Envelopment Analysis (DEA)](https://en.wikipedia.org/wiki/Data_envelopment_analysis) (aka _Frontier Efficiency Analysis_) models.
 
-# References
+For installation and usage instructions, examples and references please refer to the official documentation:
+- [**Stable**](https://sylvaticus.github.io/BDisposal.jl/stable): documentation relative to the stable version of BDisposal.jl
+- [**Development**](https://sylvaticus.github.io/BDisposal.jl/dev): Documentation relative to the development version
 
-- Abad, A. (2018), _Les Enseignements de la Micro-économie de la Production face aux
-Enjeux Environnementaux: Etude des Productions Jointes. Théorie et Applications_,
-Ph.D dissertation, University of Perpignan.
-url: [https://tel.archives-ouvertes.fr/tel-01963415](https://tel.archives-ouvertes.fr/tel-01963415)
-- Abad, A., W. Briec (2019), _On the axiomatic of pollution-generating technologies:
-Non-parametric production analysis_, European Journal of Operational Research, 277(1), 377-390
-doi: [10.1016/j.ejor.2019.02.027](https://doi.org/10.1016/j.ejor.2019.02.027)
+<br clear="left" />
+
+## Acknowledgements
+
+The development of this package at the _Bureau d'Economie Théorique et Appliquée_ (BETA, Nancy) was supported by the French National Research Agency through the [Laboratory of Excellence ARBRE](http://mycor.nancy.inra.fr/ARBRE/), a part of the “Investissements d'Avenir” Program (ANR 11 – LABX-0002-01).
+
+[![BLogos](docs/src/assets/logos_betaumr.png)](http://www.beta-umr7522.fr/)
