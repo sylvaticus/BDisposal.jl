@@ -39,13 +39,13 @@ function convexProblem(inp₀,bInp₀,gO₀,bO₀,inp,bInp,gO,bO;
 
            # Defining variables
            @variables effmodel begin
-               θ[z in 1:nDMUs] >= 0, (start = startθ) # thetas (nDMUs)
-               μ[z in 1:nDMUs] >= 0, (start = startμ) # mus (nDMUs)
+               0 <= θ[z in 1:nDMUs] <= Inf, (start = startθ) # thetas (nDMUs)
+               0 <= μ[z in 1:nDMUs] <= Inf, (start = startμ) # mus (nDMUs)
            end
            if !crossTime
-              @variable(effmodel, λ >= 1, start = startλ)
+              @variable(effmodel, 1 <= λ <= Inf, start = startλ)
            else
-              @variable(effmodel, λ, start = startλ)
+              @variable(effmodel, 0 <= λ <= 1, start = startλ)
            end
 
            # Defining constraints
@@ -100,7 +100,7 @@ function convexProblem(inp₀,bInp₀,gO₀,bO₀,inp,bInp,gO,bO;
                return missing
            end
        end # end of do function
-   else # prodStructure is then addictive...
+   else # prodStructure is then additive...
        # Model declaration (efficiency model)
        effmodel = Model(optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF)) # we choose GLPK with a verbose output
        # Defining variables
@@ -109,9 +109,9 @@ function convexProblem(inp₀,bInp₀,gO₀,bO₀,inp,bInp,gO,bO;
            μ[z in 1:nDMUs] >= 0 # mus (nDMUs)
        end
        if !crossTime
-          @variable(effmodel, λ >= 0)
+          @variable(effmodel, 0 <= λ <= Inf)
        else
-          @variable(effmodel, λ)
+          @variable(effmodel, -Inf <= λ <= Inf)
        end
        # Defining constraints
        # additive structure

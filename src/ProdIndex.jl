@@ -60,8 +60,11 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
 
     nDMUs = size(gI,1)
     nPer = size(gI,3)
+    nBI  = size(bI,2)
     startValues = (startθ,startμ,startλ)
     prodIndexes = Array{Union{Float64,Missing}}(undef, (size(gI,1),nPer-1))
+
+    noBadIndexDefault = prodStructure == "multiplicative" ? 1.0 : 0.0
 
     for t in 1:nPer-1
         gIₜ = gI[:,:,t]
@@ -95,11 +98,11 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
                         retToScale=retToScale,prodStructure=prodStructure,
                         convexAssumption=convexAssumption,
                         directions=dirGI,startValues=startValues)
-            idx_bi_t̃ = problem(gIₜ₀,bIᵤ₀,gOₜ₀,bOₜ₀,gIₜ,bIₜ,gOₜ,bOₜ,
+            idx_bi_t̃ = (nBI == 0) ? noBadIndexDefault : problem(gIₜ₀,bIᵤ₀,gOₜ₀,bOₜ₀,gIₜ,bIₜ,gOₜ,bOₜ,
                         retToScale=retToScale,prodStructure=prodStructure,
                         convexAssumption=convexAssumption,
                         directions=dirBI,startValues=startValues,crossTime=true)
-            idx_bi_t = problem(gIₜ₀,bIₜ₀,gOₜ₀,bOₜ₀,gIₜ,bIₜ,gOₜ,bOₜ,
+            idx_bi_t = (nBI == 0) ? noBadIndexDefault : problem(gIₜ₀,bIₜ₀,gOₜ₀,bOₜ₀,gIₜ,bIₜ,gOₜ,bOₜ,
                         retToScale=retToScale,prodStructure=prodStructure,
                         convexAssumption=convexAssumption,
                         directions=dirBI,startValues=startValues)
@@ -129,11 +132,11 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
                         retToScale=retToScale,prodStructure=prodStructure,
                         convexAssumption=convexAssumption,
                         directions=dirGI,startValues=startValues,crossTime=true)
-            idx_bi_u = problem(gIᵤ₀,bIᵤ₀,gOᵤ₀,bOᵤ₀,gIᵤ,bIᵤ,gOᵤ,bOᵤ,
+            idx_bi_u = (nBI == 0) ? noBadIndexDefault : problem(gIᵤ₀,bIᵤ₀,gOᵤ₀,bOᵤ₀,gIᵤ,bIᵤ,gOᵤ,bOᵤ,
                         retToScale=retToScale,prodStructure=prodStructure,
                         convexAssumption=convexAssumption,
                         directions=dirBI,startValues=startValues)
-            idx_bi_ũ = problem(gIᵤ₀,bIₜ₀,gOᵤ₀,bOᵤ₀,gIᵤ,bIᵤ,gOᵤ,bOᵤ,
+            idx_bi_ũ = (nBI == 0) ? noBadIndexDefault : problem(gIᵤ₀,bIₜ₀,gOᵤ₀,bOᵤ₀,gIᵤ,bIᵤ,gOᵤ,bOᵤ,
                         retToScale=retToScale,prodStructure=prodStructure,
                         convexAssumption=convexAssumption,
                         directions=dirBI,startValues=startValues,crossTime=true)
