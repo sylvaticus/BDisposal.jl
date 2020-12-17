@@ -33,9 +33,10 @@ function convexProblem(inp₀,bInp₀,gO₀,bO₀,inp,bInp,gO,bO;
    if prodStructure == "multiplicative"
        Ipopt.amplexe() do path
            # Model declaration (efficiency model)
-           effmodel = Model(() -> AmplNLWriter.Optimizer(path, ["print_level=0"]))
+           #effmodel = Model(() -> AmplNLWriter.Optimizer(path, ["print_level=0"]))
            #effmodel = Model(optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0))
-           #effmodel = Model(() -> AmplNLWriter.Optimizer("ipopt",["print_level=0"]))
+           effmodel = Model(() -> AmplNLWriter.Optimizer("ipopt",["print_level=0"]))
+           #effmodel = Model(optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF))
 
            # Defining variables
            @variables effmodel begin
@@ -45,7 +46,7 @@ function convexProblem(inp₀,bInp₀,gO₀,bO₀,inp,bInp,gO,bO;
            if !crossTime
               @variable(effmodel, 1 <= λ <= Inf, start = startλ)
            else
-              @variable(effmodel, 0 <= λ <= 1, start = startλ)
+              @variable(effmodel, 0 <= λ <= Inf, start = startλ)
            end
 
            # Defining constraints

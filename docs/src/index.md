@@ -42,7 +42,7 @@ println("Estimating French airports efficiency and productivity indexes...")
 
 # Loading airport data and preparing the data..
 # Data is stored as a  CSV files with 6 columns: period, dmu, co2emissions, passengers, employees, totalCosts
-airportData = CSV.read(joinpath(abspath("BDisposal"),"test","data","airports.csv"),DataFrame; delim=';',copycols=true)
+airportData = CSV.read(joinpath(dirname(pathof(BDisposal)),"test","data","airports.csv"),DataFrame; delim=';',copycols=true)
 airportGoodInputs  = ["employees","totalCosts"]
 airportBadInputs   = []
 airportGoodOutputs = ["passengers"]
