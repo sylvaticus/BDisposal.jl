@@ -2,7 +2,7 @@ module BDisposal
 
 using JuMP, Ipopt, GLPK, AmplNLWriter
 
-export efficiencyScores, prodIndex
+export efficiencyScores, prodIndex, dmuEfficiency
 # for debug only:
 export problem, convexProblem
 

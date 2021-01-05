@@ -2,6 +2,7 @@
 # Part of BDisposal.jl package
 ###############################################################
 
+using LinearAlgebra
 
 # Dispatching to either convexProblem or nonConvexProblem
 function problem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
@@ -185,4 +186,48 @@ function nonConvexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
         bFrontierDistances        = [minimum(gI_ratio[z,:]) * minimum(gO_ratio[z,:]) * (minimum(gO_ratio[z,:]) >= minimum(bO_ratio[z,:]) &&  minimum(gI_ratio[z,:]) >= (1.0 - eps())    ) for z in 1:nDMUs]
     end
     return min(maximum(normalFrontierDistances),maximum(bFrontierDistances))
+end
+
+
+# Compute the Decision MAnagement Unit efficiency usign a vanilla linearised DMU approach
+function dmuEfficiency(I₀,O₀,I,O)
+    (nDMU,nI,nO) = size(I,1), size(I,2), size(O,2)
+
+    effmodel = Model(optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF)) # we choose GLPK with a verbose output
+    # Defining variables
+    @variables effmodel begin
+        wI[i in 1:nI] >= 0  # inputs weigths
+        wO[o in 1:nO] >= 0  # outputs weigths
+    end
+
+    # Defining constraints
+    @constraints effmodel begin
+        effConstr[d in 1:nDMU],   #
+           dot(O[d,:], wO) - dot(I[d,:], wI) <=  0.0
+        regularisationConstr, # constraint on bad inputs
+            dot(I₀,wI) == 1.0
+
+    end
+
+    # Defining objective
+    @objective effmodel Max begin
+         dot(O₀, wO)
+    end
+
+    # Printing the model (for debugging)
+    #print(effmodel) # The model in mathematical terms is printed
+
+    # Solving the model
+    optimize!(effmodel)
+
+    status = termination_status(effmodel)
+
+    #if (status == MOI.OPTIMAL || status == MOI.LOCALLY_SOLVED || status == MOI.TIME_LIMIT) && has_values(effmodel)
+    if (status == MOI.OPTIMAL || status == MOI.LOCALLY_SOLVED) && has_values(effmodel)
+        wI = value.(wI)
+        wO = value.(wO)
+        return dot(O₀,wO) / dot(I₀,wI)
+    else
+        return missing
+    end
 end

@@ -81,3 +81,122 @@ prodIndices = prodIndex(gI,gO,bO,bI;
                   retToScale="variable",prodStructure="additive",convexAssumption=true,
                   startθ=0,startμ=0,startλ=1.1)
 @test prodIndices[3,2] ≈ -0.09534201521261434
+
+# Basic testing of dmuEfficiency
+
+
+I  = [10 2; 8 4; 12 1.5; 24 3]
+O =  [100;80;120;120]
+I₀ = [24 3]
+O₀ = [120]
+
+dmuEfficiency(I₀,O₀,I,O)
+I = [
+3	5
+2.5	4.5
+4	6
+6	7
+2.3	3.5
+4	6.5
+7	10
+4.4	6.4
+3	5
+5	7
+5	7
+2	4
+5	7
+4	4
+2	3
+3	6
+7	11
+4	6
+3	4
+5	6
+]
+O = [
+40	55	30
+45	50	40
+55	45	30
+48	20	60
+28	50	25
+48	20	65
+80	65	57
+25	48	30
+45	64	42
+70	65	48
+45	65	40
+45	40	44
+65	25	35
+38	18	64
+20	50	15
+38	20	60
+68	64	54
+25	38	20
+45	67	32
+57	60	40
+]
+nDMU = size(I,1)
+efficiencies = [dmuEfficiency(I[d,:],O[d,:],I,O) for  d in 1:nDMU]
+efficiencies = hcat(1:nDMU,efficiencies)
+efficiencies = efficiencies[sortperm(efficiencies[:, 2],rev=true), :]
+
+I = [
+4	140
+5	90
+6	36
+10	300
+11	66
+8	36
+9	12
+5	210
+5.5	33
+8	288
+10	80
+8	8
+]
+
+O =[
+2	28
+1	22.5
+6	12
+8	60
+7	16.5
+6	12
+7	6
+3	30
+4.4	5.5
+4	72
+2	20
+1	4
+]
+
+nDMU = size(I,1)
+efficiencies = [dmuEfficiency(I[d,:],O[d,:],I,O) for  d in 1:nDMU]
+efficiencies = hcat(1:nDMU,efficiencies)
+efficiencies = efficiencies[sortperm(efficiencies[:, 2],rev=true), :]
+
+I = [
+1
+1
+1
+1
+1
+1
+1
+1
+]
+
+O = [
+1 7
+2 7
+4 6
+6 4
+7 2
+7 1
+2 2
+5.3 5.3
+]
+nDMU = size(I,1)
+efficiencies = [dmuEfficiency(I[d,:],O[d,:],I,O) for  d in 1:nDMU]
+#efficiencies = hcat(1:nDMU,efficiencies)
+scatter(O[:,1],O[:,2])
