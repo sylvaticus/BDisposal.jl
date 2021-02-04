@@ -1,6 +1,6 @@
 
 using Test, DataFrames, CSV, BDisposal, Plots
-println("Testing BDisposal...")]
+println("Testing BDisposal...")
 
 # Aitport data test with only one input category...
 airportData = CSV.read(joinpath(@__DIR__,"data","airports.csv"),DataFrame; delim=';',copycols=true)
@@ -197,4 +197,5 @@ O = [
 nDMU = size(I,1)
 efficiencies = [dmuEfficiency(I[d,:],O[d,:],I,O) for  d in 1:nDMU]
 #efficiencies = hcat(1:nDMU,efficiencies)
-scatter(O[:,1],O[:,2])
+#scatter(O[:,1],O[:,2])
+@test efficiencies == [1.0,1.0,1.0,1.0,1.0,1.0,0.37735849056603776,1.0]
