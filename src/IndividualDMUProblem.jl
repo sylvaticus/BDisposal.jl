@@ -189,7 +189,20 @@ function nonConvexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
 end
 
 
-# Compute the Decision MAnagement Unit efficiency usign a vanilla linearised DMU approach
+"""
+     dmuEfficiency(I₀,O₀,I,O)
+
+Compute the efficiency score for a DMU using vanilla Data Envelope Analysis.
+
+## Parameters:
+  *  `I₀`: This DMU inputs (nI)
+  *  `O₀`: This DMU outputs (n0)
+  *  `I`: All DMUs inputs (nDMU x nI)
+  *  `O`: All DMUs outputs (nDMU x n0)
+
+## Returns:
+- A scalar representing the efficiency score of the DMU
+"""
 function dmuEfficiency(I₀,O₀,I,O)
     (nDMU,nI,nO) = size(I,1), size(I,2), size(O,2)
 

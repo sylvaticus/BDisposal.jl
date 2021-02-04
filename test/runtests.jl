@@ -1,6 +1,6 @@
 
-using Test, DataFrames, CSV, BDisposal
-println("Testing BDisposal...")
+using Test, DataFrames, CSV, BDisposal, Plots
+println("Testing BDisposal...")]
 
 # Aitport data test with only one input category...
 airportData = CSV.read(joinpath(@__DIR__,"data","airports.csv"),DataFrame; delim=';',copycols=true)
@@ -83,8 +83,6 @@ prodIndices = prodIndex(gI,gO,bO,bI;
 @test prodIndices[3,2] ≈ -0.09534201521261434
 
 # Basic testing of dmuEfficiency
-
-
 I  = [10 2; 8 4; 12 1.5; 24 3]
 O =  [100;80;120;120]
 I₀ = [24 3]
