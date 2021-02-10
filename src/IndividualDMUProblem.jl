@@ -250,9 +250,9 @@ function dmuEfficiency(I₀,O₀,I,O)
         refSet = Dict{Int64,Float64}()
         [refSet[i] = -f for (i,f) in enumerate(duals) if f != 0.0]
         eff  = (isapprox.(obj,1.0,atol=1e-15) && !any(isapprox.(wI,0.0,atol=1e-15)) && !any(isapprox.(wI,0.0,atol=1e-15))) # efficient if the objective is 1 AND no weigths are zero (otherwise it is on one periphal side of the frontier and shadowed by other points)
-        return (eff, obj=obj, wI=wI, wO = wO, refSet=refSet)
+        return (eff=eff, obj=obj, wI=wI, wO = wO, refSet=refSet)
     else
-        return missing
+        return (eff=missing,obj=missing,wI=missing,wO = missing,refSet=missing)
     end
 end
 
