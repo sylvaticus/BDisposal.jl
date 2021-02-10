@@ -201,7 +201,13 @@ Compute the efficiency score for a DMU using vanilla Data Envelope Analysis.
   *  `O`: All DMUs outputs (nDMU x n0)
 
 ## Returns:
-- A scalar representing the efficiency score of the DMU
+- A named tuple with:
+  - `eff`: a boolean to indicate if the DMU is efficient or not
+  - `obj`: a scalar representing the efficiency score of the DMU
+  - `wI`: a vector of the optimal input weights
+  - `wO`: a vector of the optimal output weights
+  - `refSet`: a dictionary having as key the numearal of the reference DMUs and
+  values the relative constraint duals
 """
 function dmuEfficiency(I₀,O₀,I,O)
     (nDMU,nI,nO) = size(I,1), size(I,2), size(O,2)
