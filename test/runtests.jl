@@ -134,7 +134,7 @@ O = [
 57	60	40
 ]
 nDMU = size(I,1)
-efficiencies = [dmuEfficiency(I[d,:],O[d,:],I,O) for  d in 1:nDMU]
+efficiencies = [dmuEfficiency(I[d,:],O[d,:],I,O)[:obj] for  d in 1:nDMU]
 efficiencies = hcat(1:nDMU,efficiencies)
 efficiencies = efficiencies[sortperm(efficiencies[:, 2],rev=true), :]
 
@@ -169,7 +169,7 @@ O =[
 ]
 
 nDMU = size(I,1)
-efficiencies = [dmuEfficiency(I[d,:],O[d,:],I,O) for  d in 1:nDMU]
+efficiencies = [dmuEfficiency(I[d,:],O[d,:],I,O)[:obj] for  d in 1:nDMU]
 efficiencies = hcat(1:nDMU,efficiencies)
 efficiencies = efficiencies[sortperm(efficiencies[:, 2],rev=true), :]
 
@@ -195,7 +195,21 @@ O = [
 5.3 5.3
 ]
 nDMU = size(I,1)
-efficiencies = [dmuEfficiency(I[d,:],O[d,:],I,O) for  d in 1:nDMU]
+efficiencies = [dmuEfficiency(I[d,:],O[d,:],I,O)[:obj] for  d in 1:nDMU]
 #efficiencies = hcat(1:nDMU,efficiencies)
 #scatter(O[:,1],O[:,2])
 @test efficiencies == [1.0,1.0,1.0,1.0,1.0,1.0,0.37735849056603776,1.0]
+
+# From Example 2.2 of Cooper et oth. 2006 "Data envelopment Analysis. A Comprehensive Text with...."
+
+X = [4 7 8 4 2 10; 3 3 1 2 4 1]
+Y = [1 1 1 1 1 1]
+
+nDMU = size(X,2)
+out = [dmuEfficiency(X[:,d],Y[:,d],X',Y') for  d in 1:nDMU]
+@test out[1].obj ≈ 0.8571428571428571
+@test out[1].wI ≈ [0.14285714285714285, 0.14285714285714285]
+@test out[1].wO ≈ [0.8571428571428571]
+@test collect(keys(out[1].refSet)) ≈ [5,4]
+@test collect(values(out[1].refSet)) ≈ [0.2857142857142857,0.7142857142857143]
+@test [i[:eff] for i in out] == [false,false,true,true,true,false]

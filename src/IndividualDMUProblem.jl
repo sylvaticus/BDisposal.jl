@@ -217,7 +217,7 @@ function dmuEfficiency(I₀,O₀,I,O)
     @constraints effmodel begin
         effConstr[d in 1:nDMU],   #
            dot(O[d,:], wO) - dot(I[d,:], wI) <=  0.0
-        regularisationConstr, # constraint on bad inputs
+        iRegularisationConstr, # regularisation of inputs
             dot(I₀,wI) == 1.0
 
     end
@@ -239,8 +239,17 @@ function dmuEfficiency(I₀,O₀,I,O)
     if (status == MOI.OPTIMAL || status == MOI.LOCALLY_SOLVED) && has_values(effmodel)
         wI = value.(wI)
         wO = value.(wO)
-        return dot(O₀,wO) / dot(I₀,wI)
+        duals = dual.(effConstr)
+        obj = dot(O₀,wO) / dot(I₀,wI)
+        refSet = Dict{Int64,Float64}()
+        [refSet[i] = -f for (i,f) in enumerate(duals) if f != 0.0]
+        eff  = (isapprox.(obj,1.0,atol=1e-15) && !any(isapprox.(wI,0.0,atol=1e-15)) && !any(isapprox.(wI,0.0,atol=1e-15))) # efficient if the objective is 1 AND no weigths are zero (otherwise it is on one periphal side of the frontier and shadowed by other points)
+        return (eff, obj=obj, wI=wI, wO = wO, refSet=refSet)
     else
         return missing
     end
 end
+
+#cd(@__DIR__)
+#using Pkg
+#Pkg.activate("..")
