@@ -213,3 +213,6 @@ out = [dmuEfficiency(X[:,d],Y[:,d],X',Y') for  d in 1:nDMU]
 @test collect(keys(out[1].refSet)) ≈ [5,4]
 @test collect(values(out[1].refSet)) ≈ [0.2857142857142857,0.7142857142857143]
 @test [i[:eff] for i in out] == [false,false,true,true,true,false]
+
+outDual = [dmuEfficiencyDual(X[:,d],Y[:,d],X',Y') for  d in 1:nDMU]
+@test [i[:eff] for i in outDual] == [false,false,true,true,true,false]

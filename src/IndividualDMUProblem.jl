@@ -202,6 +202,7 @@ Compute the efficiency score for a DMU using vanilla Data Envelope Analysis.
 
 ## Returns:
 - A named tuple with:
+  - `computed`: a boolean to indicase wheter the underlying optimisation succeeded
   - `eff`: a boolean to indicate if the DMU is efficient or not
   - `obj`: a scalar representing the efficiency score of the DMU
   - `wI`: a vector of the optimal input weights
@@ -209,7 +210,7 @@ Compute the efficiency score for a DMU using vanilla Data Envelope Analysis.
   - `refSet`: a dictionary having as key the numearal of the reference DMUs and
   values the relative constraint duals
 """
-function dmuEfficiency(I₀,O₀,I,O)
+function dmuEfficiency(I₀,O₀,I,O) # # Cooper & oth., p.23-24 and 43
     (nDMU,nI,nO) = size(I,1), size(I,2), size(O,2)
 
     effmodel = Model(optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF)) # we choose GLPK with a verbose output
@@ -221,7 +222,7 @@ function dmuEfficiency(I₀,O₀,I,O)
 
     # Defining constraints
     @constraints effmodel begin
-        effConstr[d in 1:nDMU],   #
+        othDMUsEffConstr[d in 1:nDMU],   #
            dot(O[d,:], wO) - dot(I[d,:], wI) <=  0.0
         iRegularisationConstr, # regularisation of inputs
             dot(I₀,wI) == 1.0
@@ -241,21 +242,115 @@ function dmuEfficiency(I₀,O₀,I,O)
 
     status = termination_status(effmodel)
 
-    #if (status == MOI.OPTIMAL || status == MOI.LOCALLY_SOLVED || status == MOI.TIME_LIMIT) && has_values(effmodel)
     if (status == MOI.OPTIMAL || status == MOI.LOCALLY_SOLVED) && has_values(effmodel)
         wI = value.(wI)
         wO = value.(wO)
-        duals = dual.(effConstr)
+        othDMUsEffConstrDuals = -dual.(othDMUsEffConstr)
+        iRegConstrDual = -dual(iRegularisationConstr)
         obj = dot(O₀,wO) / dot(I₀,wI)
         refSet = Dict{Int64,Float64}()
-        [refSet[i] = -f for (i,f) in enumerate(duals) if f != 0.0]
+        [refSet[i] = f for (i,f) in enumerate(othDMUsEffConstrDuals) if f != 0.0]
         eff  = (isapprox.(obj,1.0,atol=1e-15) && !any(isapprox.(wI,0.0,atol=1e-15)) && !any(isapprox.(wI,0.0,atol=1e-15))) # efficient if the objective is 1 AND no weigths are zero (otherwise it is on one periphal side of the frontier and shadowed by other points)
-        return (eff=eff, obj=obj, wI=wI, wO = wO, refSet=refSet)
+        return (computed=true,eff=eff, obj=obj, wI=wI, wO = wO, refSet=refSet, othDMUsEffConstrDuals=othDMUsEffConstrDuals,iRegConstrDual=iRegConstrDual)
     else
-        return (eff=missing,obj=missing,wI=missing,wO = missing,refSet=missing)
+        return (computed=false,eff=missing,obj=missing,wI=missing,wO = missing,refSet=missing,othDMUsEffConstrDuals=missing,iRegConstrDual=missing)
     end
 end
 
-#cd(@__DIR__)
-#using Pkg
-#Pkg.activate("..")
+# Cooper & oth., p.43
+function dmuEfficiencyDual(I₀,O₀,I,O)
+    (nDMU,nI,nO) = size(I,1), size(I,2), size(O,2)
+
+    effmodeldual = Model(optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF)) # we choose GLPK with a verbose output
+    # Defining variables
+    @variables effmodeldual begin
+        λ[i in 1:nDMU] >= 0  # the constrain dual in the primal
+        θ                    # the costs per output ???
+    end
+
+    # Defining constraints
+    @constraints effmodeldual begin
+        inConstr[i in 1:nI],   #
+           θ*I₀[i] - dot(I[:,i], λ) >=  0.0
+        oRegularisationConstr[j in 1:nO], # regularisation of outputs ??
+            dot(O[:,j],λ) >= O₀[j]
+    end
+
+    # Defining objective
+    @objective effmodeldual Min begin
+         θ
+    end
+
+    # Printing the model (for debugging)
+    #print(effmodel) # The model in mathematical terms is printed
+
+    # Solving the model
+    optimize!(effmodeldual)
+
+    status = termination_status(effmodeldual)
+
+    if (status == MOI.OPTIMAL || status == MOI.LOCALLY_SOLVED) && has_values(effmodeldual)
+        λv = value.(λ)
+        θv = value(θ)
+        dualsI = dual.(inConstr)
+        dualsO = dual.(oRegularisationConstr)
+        obj = objective_value(effmodeldual)
+        outPass2 = dmuPass2(θv,I₀,O₀,I,O)
+        s⁻ = outPass2.s⁻ # input excesses
+        s⁺ = outPass2.s⁺ # output shortfalls
+        eff  = (isapprox.(obj,1.0,atol=1e-15) && all(isapprox.(s⁻,0.0,atol=1e-15)) && all(isapprox.(s⁺,0.0,atol=1e-15))) # efficient if the objective is 1 AND no weigths are zero (otherwise it is on one periphal side of the frontier and shadowed by other points)
+        #refSet = Dict{Int64,Float64}()
+        #[refSet[i] = -f for (i,f) in enumerate(duals) if f != 0.0]
+        #eff  = (isapprox.(obj,1.0,atol=1e-15) && !any(isapprox.(wI,0.0,atol=1e-15)) && !any(isapprox.(wI,0.0,atol=1e-15))) # efficient if the objective is 1 AND no weigths are zero (otherwise it is on one periphal side of the frontier and shadowed by other points)
+        #return (eff=eff, obj=obj, wI=wI, wO = wO, refSet=refSet)
+        return (computed=true, eff=eff, obj=obj,  λ=λv, θ=θv, dualsI=dualsI, dualsO=dualsO, s⁻=s⁻, s⁺=s⁺)
+    else
+        #return (eff=missing,obj=missing,wI=missing,wO = missing,refSet=missing)
+        return (computed=false, eff=eff, obj=missing, λ=missing, θ=missing, dualsI=missing , dualsO=missing , s⁻=missing, s⁺=missing)
+    end
+end
+
+# Cooper & oth., p.44
+function dmuPass2(θ,I₀,O₀,I,O)
+    (nDMU,nI,nO) = size(I,1), size(I,2), size(O,2)
+
+    effmodeldual = Model(optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF)) # we choose GLPK with a verbose output
+    # Defining variables
+    @variables effmodeldual begin
+        λ[i in 1:nDMU] >= 0  # the constrain dual in the primal
+        s⁻[i in 1:nI]  >= 0  # input excesses
+        s⁺[i in 1:nO]  >= 0  # output shortfalls
+    end
+
+    # Defining constraints
+    @constraints effmodeldual begin
+        inConstr[i in 1:nI],   #
+           θ*I₀[i] - dot(I[:,i], λ) ==  s⁻[i]
+        oRegularisationConstr[j in 1:nO], # regularisation of outputs ??
+            dot(O[:,j],λ) - O₀[j] == s⁺[j]
+    end
+
+    # Defining objective
+    @objective effmodeldual Max begin
+         sum(s⁻)+sum(s⁺)
+    end
+
+    # Printing the model (for debugging)
+    #print(effmodel) # The model in mathematical terms is printed
+
+    # Solving the model
+    optimize!(effmodeldual)
+
+    status = termination_status(effmodeldual)
+
+    if (status == MOI.OPTIMAL || status == MOI.LOCALLY_SOLVED) && has_values(effmodeldual)
+        λv = value.(λ)
+        s⁻v = value.(s⁻)
+        s⁺v = value.(s⁺)
+        obj = objective_value(effmodeldual)
+        return (computed=true, obj=obj, λ=λv, s⁻=s⁻v, s⁺=s⁺v )
+    else
+        #return (eff=missing,obj=missing,wI=missing,wO = missing,refSet=missing)
+        return (computed=false, obj=missing, λ=missing,s⁻=missing, s⁺=missing )
+    end
+end

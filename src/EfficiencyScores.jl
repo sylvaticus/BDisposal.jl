@@ -20,7 +20,7 @@ distance to the production frontier, i.e. their degree of efficiency.
 - Keyword
   *  `retToScale`: Wheter the return to scales should be assumed "constant" (default) or "variable"
   *  `prodStructure`: Wheter the production structure should be assumed "additive" (default) or "multiplicative"
-  *  `dirGI`,`dirBI`,`dirGO`,`dirBO`: The direcitons toward where to measure the efficiency (see notes) [default: `(0,0,1,-1)`]
+  *  `dirGI`,`dirBI`,`dirGO`,`dirBO`: The directions toward where to measure the efficiency (see notes) [default: `(0,0,1,-1)`]
   *  `startθ`,`startμ`,`startλ`: Initial values in the convex optimisation problem [default: `(0,0,1.1)`]
 
 ## Returns:
