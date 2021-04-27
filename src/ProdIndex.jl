@@ -53,8 +53,8 @@ technical and scale efficiency components.
 * The non-convex problem still need to consider bad inputs, consider directions, consider multiplicative/additive structures
 
 """
-function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3},bI::Array{Float64,3}=Array{Float64}(undef, (size(gI,1),0,size(gI,3)));
-                   retToScale="constant",prodStructure="multiplicative",convexAssumption=true,)
+function prodIndexInner(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3},bI::Array{Float64,3}=Array{Float64}(undef, (size(gI,1),0,size(gI,3)));
+                   retToScale="constant",prodStructure="multiplicative",convexAssumption=true,partition="full")
 
     nDMUs = size(gI,1)
     nPer = size(gI,3)
@@ -156,27 +156,85 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
                         convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
                         directions=dirBO,crossTime=true)
 
-            if prodStructure == "multiplicative"
-               idx_i_t = (idx_gi_t̃/idx_gi_t) * (idx_bi_t̃/idx_bi_t)
-               idx_o_t = (idx_go_t̃/idx_go_t) * (idx_bo_t̃/idx_bo_t)
-               idx_t   = idx_o_t/idx_i_t
-               idx_i_u = (idx_gi_u/idx_gi_ũ) * (idx_bi_u/idx_bi_ũ)
-               idx_o_u = (idx_go_u/idx_go_ũ) * (idx_bo_u/idx_bo_ũ)
-               idx_u   = idx_o_u/idx_i_u
-               idx     = (idx_t * idx_u)^(1/2)
+        
 
-            else
-                idx_i_t = (idx_gi_t̃ - idx_gi_t) + (idx_bi_t̃ - idx_bi_t)
-                idx_o_t = (idx_go_t - idx_go_t̃) + (idx_bo_t - idx_bo_t̃)
-                idx_t   = idx_o_t - idx_i_t
-                idx_i_u = (idx_gi_u - idx_gi_ũ) + (idx_bi_u - idx_bi_ũ)
-                idx_o_u = (idx_go_ũ - idx_go_u) + (idx_bo_ũ - idx_bo_u)
-                idx_u   = idx_o_u - idx_i_u
-                idx     = (idx_t + idx_u) / 2
+            if partition == "full"
+                if prodStructure == "multiplicative"
+                   idx_i_t = (idx_gi_t̃/idx_gi_t) * (idx_bi_t̃/idx_bi_t)
+                   idx_o_t = (idx_go_t̃/idx_go_t) * (idx_bo_t̃/idx_bo_t)
+                   idx_t   = idx_o_t/idx_i_t
+                   idx_i_u = (idx_gi_u/idx_gi_ũ) * (idx_bi_u/idx_bi_ũ)
+                   idx_o_u = (idx_go_u/idx_go_ũ) * (idx_bo_u/idx_bo_ũ)
+                   idx_u   = idx_o_u/idx_i_u
+                   idx     = (idx_t * idx_u)^(1/2)
+
+                else
+                    idx_i_t = (idx_gi_t̃ - idx_gi_t) + (idx_bi_t̃ - idx_bi_t)
+                    idx_o_t = (idx_go_t - idx_go_t̃) + (idx_bo_t - idx_bo_t̃)
+                    idx_t   = idx_o_t - idx_i_t
+                    idx_i_u = (idx_gi_u - idx_gi_ũ) + (idx_bi_u - idx_bi_ũ)
+                    idx_o_u = (idx_go_ũ - idx_go_u) + (idx_bo_ũ - idx_bo_u)
+                    idx_u   = idx_o_u - idx_i_u
+                    idx     = (idx_t + idx_u) / 2
+                end
+
+            elseif partition == "onlyGoodIO"
+
+                if prodStructure == "multiplicative"
+                   idx_i_t = (idx_gi_t̃/idx_gi_t)
+                   idx_o_t = (idx_go_t̃/idx_go_t)
+                   idx_t   = idx_o_t/idx_i_t
+                   idx_i_u = (idx_gi_u/idx_gi_ũ)
+                   idx_o_u = (idx_go_u/idx_go_ũ)
+                   idx_u   = idx_o_u/idx_i_u
+                   idx     = (idx_t * idx_u)^(1/2)
+
+                else
+                    idx_i_t = (idx_gi_t̃ - idx_gi_t)
+                    idx_o_t = (idx_go_t - idx_go_t̃)
+                    idx_t   = idx_o_t - idx_i_t
+                    idx_i_u = (idx_gi_u - idx_gi_ũ)
+                    idx_o_u = (idx_go_ũ - idx_go_u)
+                    idx_u   = idx_o_u - idx_i_u
+                    idx     = (idx_t + idx_u) / 2
+                end
+
+            elseif partition == "onlyBadIO"
+                if prodStructure == "multiplicative"
+                   idx_i_t =  (idx_bi_t̃/idx_bi_t)
+                   idx_o_t =  (idx_bo_t̃/idx_bo_t)
+                   idx_t   = idx_o_t/idx_i_t
+                   idx_i_u = (idx_bi_u/idx_bi_ũ)
+                   idx_o_u =  (idx_bo_u/idx_bo_ũ)
+                   idx_u   = idx_o_u/idx_i_u
+                   idx     = (idx_t * idx_u)^(1/2)
+
+                else
+                    idx_i_t = (idx_bi_t̃ - idx_bi_t)
+                    idx_o_t = (idx_bo_t - idx_bo_t̃)
+                    idx_t   = idx_o_t - idx_i_t
+                    idx_i_u = (idx_bi_u - idx_bi_ũ)
+                    idx_o_u = (idx_bo_ũ - idx_bo_u)
+                    idx_u   = idx_o_u - idx_i_u
+                    idx     = (idx_t + idx_u) / 2
+                end
             end
-
             prodIndexes[z,t] = idx
         end
     end
     return prodIndexes
+end
+
+function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3},bI::Array{Float64,3}=Array{Float64}(undef, (size(gI,1),0,size(gI,3)));
+                   retToScale="constant",prodStructure="multiplicative",convexAssumption=true,)
+
+                   # case1: partitioned
+                   prodIndexResultPartitioned = prodIndexInner(gI,gO,bO,bI,retToScale=retToScale,prodStructure=prodStructure,convexAssumption=convexAssumption,partition="full")
+                   # case2: get results from "good components" only
+                   prodIndexResultGoodComponents = prodIndexInner(gI,gO,bO,bI,retToScale=retToScale,prodStructure=prodStructure,convexAssumption=convexAssumption,partition="onlyGoodIO")
+                   # case3:: get results from "bad components" only
+                   prodIndexResultBadComponents = prodIndexInner(gI,gO,bO,bI,retToScale=retToScale,prodStructure=prodStructure,convexAssumption=convexAssumption,partition="onlyBadIO")
+
+                  return (prodIndexResultPartitioned,prodIndexResultGoodComponents, prodIndexResultBadComponents)
+
 end

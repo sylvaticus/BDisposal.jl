@@ -70,7 +70,12 @@ end
 prodIndices = prodIndex(gI,gO,bO,bI;
                    retToScale="constant",prodStructure="multiplicative",convexAssumption=true)
 
-@test prodIndices[3,2] ≈ 1.147467571896574
+
+prodIndices = prodIndex(gI,gO,bO,bI;
+                  retToScale="constant",prodStructure="multiplicative",convexAssumption=true)
+
+
+@test prodIndices[1][3,2] ≈ 1.147467571896574
 
 prodIndices = prodIndex(gI,gO,bO,bI;
                    retToScale="variable",prodStructure="multiplicative",convexAssumption=true)
@@ -79,7 +84,7 @@ prodIndices = prodIndex(gI,gO,bO,bI;
 prodIndices = prodIndex(gI,gO,bO,bI;
                   retToScale="variable",prodStructure="additive",convexAssumption=true)
 
-@test prodIndices[3,2] ≈ -0.09534201521261434
+@test prodIndices[1][3,2] ≈ -0.09534201521261434
 
 
 
