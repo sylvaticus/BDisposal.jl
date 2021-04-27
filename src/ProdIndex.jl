@@ -21,7 +21,6 @@ productivity indexes improvements (or declines) between consecutive time periods
   *  `retToScale`: Wheter the return to scales should be assumed "constant" (default) or "variable"
   *  `prodStructure`: Wheter the production structure should be assumed "additive" (default) or "multiplicative"
   *  `convexAssumption`: Wheter a convex production frontier should be assumed [default: `true`]
-  *  `startθ`,`startμ`,`startλ`: Initial values for the convex optimisation problem (used only with `convexAssumption=true`)[default: `(0,0,1.1)`]
 
 ## Returns:
 * A matrix of production indexes by DMUs and period passages (e.g. "year2 on year1" and "year3 on year2")
@@ -55,13 +54,11 @@ technical and scale efficiency components.
 
 """
 function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3},bI::Array{Float64,3}=Array{Float64}(undef, (size(gI,1),0,size(gI,3)));
-                   retToScale="constant",prodStructure="multiplicative",convexAssumption=true,
-                   startθ=0,startμ=0,startλ=1.1)
+                   retToScale="constant",prodStructure="multiplicative",convexAssumption=true,)
 
     nDMUs = size(gI,1)
     nPer = size(gI,3)
     nBI  = size(bI,2)
-    startValues = (startθ,startμ,startλ)
     prodIndexes = Array{Union{Float64,Missing}}(undef, (size(gI,1),nPer-1))
 
     noBadIndexDefault = prodStructure == "multiplicative" ? 1.0 : 0.0
@@ -89,73 +86,75 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
             gOᵤ₀ = gOᵤ[z,:]
             bOᵤ₀ = bOᵤ[z,:]
 
+            forceLinearModel = (convexAssumption == true) ?  true : false
+
             # t...
             idx_gi_t̃ = problem(gIᵤ₀,bIₜ₀,gOₜ₀,bOₜ₀,gIₜ,bIₜ,gOₜ,bOₜ,
                         retToScale=retToScale,prodStructure=prodStructure,
-                        convexAssumption=convexAssumption,
-                        directions=dirGI,startValues=startValues,crossTime=true)
+                        convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
+                        directions=dirGI,crossTime=true)
             idx_gi_t = problem(gIₜ₀,bIₜ₀,gOₜ₀,bOₜ₀,gIₜ,bIₜ,gOₜ,bOₜ,
                         retToScale=retToScale,prodStructure=prodStructure,
-                        convexAssumption=convexAssumption,
-                        directions=dirGI,startValues=startValues)
+                        convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
+                        directions=dirGI)
             idx_bi_t̃ = (nBI == 0) ? noBadIndexDefault : problem(gIₜ₀,bIᵤ₀,gOₜ₀,bOₜ₀,gIₜ,bIₜ,gOₜ,bOₜ,
                         retToScale=retToScale,prodStructure=prodStructure,
-                        convexAssumption=convexAssumption,
-                        directions=dirBI,startValues=startValues,crossTime=true)
+                        convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
+                        directions=dirBI,crossTime=true)
             idx_bi_t = (nBI == 0) ? noBadIndexDefault : problem(gIₜ₀,bIₜ₀,gOₜ₀,bOₜ₀,gIₜ,bIₜ,gOₜ,bOₜ,
                         retToScale=retToScale,prodStructure=prodStructure,
-                        convexAssumption=convexAssumption,
-                        directions=dirBI,startValues=startValues)
+                        convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
+                        directions=dirBI)
             idx_go_t̃ = problem(gIₜ₀,bIₜ₀,gOᵤ₀,bOₜ₀,gIₜ,bIₜ,gOₜ,bOₜ,
                         retToScale=retToScale,prodStructure=prodStructure,
-                        convexAssumption=convexAssumption,
-                        directions=dirGO,startValues=startValues,crossTime=true)
+                        convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
+                        directions=dirGO,crossTime=true)
             idx_go_t = problem(gIₜ₀,bIₜ₀,gOₜ₀,bOₜ₀,gIₜ,bIₜ,gOₜ,bOₜ,
                         retToScale=retToScale,prodStructure=prodStructure,
-                        convexAssumption=convexAssumption,
-                        directions=dirGO,startValues=startValues)
+                        convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
+                        directions=dirGO)
             idx_bo_t̃ = problem(gIₜ₀,bIₜ₀,gOₜ₀,bOᵤ₀,gIₜ,bIₜ,gOₜ,bOₜ,
                         retToScale=retToScale,prodStructure=prodStructure,
-                        convexAssumption=convexAssumption,
-                        directions=dirBO,startValues=startValues,crossTime=true)
+                        convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
+                        directions=dirBO,crossTime=true)
             idx_bo_t = problem(gIₜ₀,bIₜ₀,gOₜ₀,bOₜ₀,gIₜ,bIₜ,gOₜ,bOₜ,
                         retToScale=retToScale,prodStructure=prodStructure,
-                        convexAssumption=convexAssumption,
-                        directions=dirBO,startValues=startValues)
+                        convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
+                        directions=dirBO)
 
             # u...
             idx_gi_u = problem(gIᵤ₀,bIᵤ₀,gOᵤ₀,bOᵤ₀,gIᵤ,bIᵤ,gOᵤ,bOᵤ,
                         retToScale=retToScale,prodStructure=prodStructure,
-                        convexAssumption=convexAssumption,
-                        directions=dirGI,startValues=startValues)
+                        convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
+                        directions=dirGI)
             idx_gi_ũ = problem(gIₜ₀,bIᵤ₀,gOᵤ₀,bOᵤ₀,gIᵤ,bIᵤ,gOᵤ,bOᵤ,
                         retToScale=retToScale,prodStructure=prodStructure,
-                        convexAssumption=convexAssumption,
-                        directions=dirGI,startValues=startValues,crossTime=true)
+                        convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
+                        directions=dirGI,crossTime=true)
             idx_bi_u = (nBI == 0) ? noBadIndexDefault : problem(gIᵤ₀,bIᵤ₀,gOᵤ₀,bOᵤ₀,gIᵤ,bIᵤ,gOᵤ,bOᵤ,
                         retToScale=retToScale,prodStructure=prodStructure,
-                        convexAssumption=convexAssumption,
-                        directions=dirBI,startValues=startValues)
+                        convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
+                        directions=dirBI)
             idx_bi_ũ = (nBI == 0) ? noBadIndexDefault : problem(gIᵤ₀,bIₜ₀,gOᵤ₀,bOᵤ₀,gIᵤ,bIᵤ,gOᵤ,bOᵤ,
                         retToScale=retToScale,prodStructure=prodStructure,
-                        convexAssumption=convexAssumption,
-                        directions=dirBI,startValues=startValues,crossTime=true)
+                        convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
+                        directions=dirBI,crossTime=true)
             idx_go_u = problem(gIᵤ₀,bIᵤ₀,gOᵤ₀,bOᵤ₀,gIᵤ,bIᵤ,gOᵤ,bOᵤ,
                         retToScale=retToScale,prodStructure=prodStructure,
-                        convexAssumption=convexAssumption,
-                        directions=dirGO,startValues=startValues)
+                        convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
+                        directions=dirGO)
             idx_go_ũ = problem(gIᵤ₀,bIᵤ₀,gOₜ₀,bOᵤ₀,gIᵤ,bIᵤ,gOᵤ,bOᵤ,
                         retToScale=retToScale,prodStructure=prodStructure,
-                        convexAssumption=convexAssumption,
-                        directions=dirGO,startValues=startValues,crossTime=true)
+                        convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
+                        directions=dirGO,crossTime=true)
             idx_bo_u = problem(gIᵤ₀,bIᵤ₀,gOᵤ₀,bOᵤ₀,gIᵤ,bIᵤ,gOᵤ,bOᵤ,
                         retToScale=retToScale,prodStructure=prodStructure,
-                        convexAssumption=convexAssumption,
-                        directions=dirBO,startValues=startValues)
+                        convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
+                        directions=dirBO)
             idx_bo_ũ = problem(gIᵤ₀,bIᵤ₀,gOᵤ₀,bOₜ₀,gIᵤ,bIᵤ,gOᵤ,bOᵤ,
                         retToScale=retToScale,prodStructure=prodStructure,
-                        convexAssumption=convexAssumption,
-                        directions=dirBO,startValues=startValues,crossTime=true)
+                        convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
+                        directions=dirBO,crossTime=true)
 
             if prodStructure == "multiplicative"
                idx_i_t = (idx_gi_t̃/idx_gi_t) * (idx_bi_t̃/idx_bi_t)

@@ -8,13 +8,13 @@ using LinearAlgebra
 function problem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
                  retToScale,prodStructure,convexAssumption=true,
                  directions=(),
-                 startValues=(),crossTime=false)
+                 startValues=(),crossTime=false,forceLinearModel=false)
 
      if convexAssumption
          return convexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
                           retToScale=retToScale,prodStructure=prodStructure,
                           directions=directions,
-                          startValues=startValues,crossTime=crossTime)
+                          startValues=startValues,crossTime=crossTime,forceLinearModel=forceLinearModel)
      else
          return nonConvexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
                           retToScale=retToScale,prodStructure=prodStructure,
@@ -26,82 +26,238 @@ end
 function convexProblem(inp₀,bInp₀,gO₀,bO₀,inp,bInp,gO,bO;
                        retToScale,prodStructure,
                        directions,
-                       startValues,crossTime=false)
+                       startValues,crossTime=false,forceLinearModel=false)
 
    nI, nGO, nBO, nDMUs, nbI = length(inp₀), length(gO₀), length(bO₀), size(inp,1), length(bInp₀)
    (dirGI,dirBI,dirGO,dirBO) = directions
-   (startθ,startμ,startλ)    = startValues
+   if !forceLinearModel
+       (startθ,startμ,startλ)    = startValues
+   end
+
    if prodStructure == "multiplicative"
-       Ipopt.amplexe() do path
-           # Model declaration (efficiency model)
-           #effmodel = Model(() -> AmplNLWriter.Optimizer(path, ["print_level=0"]))
-           #effmodel = Model(optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0))
-           effmodel = Model(() -> AmplNLWriter.Optimizer("ipopt",["print_level=0"]))
-           #effmodel = Model(optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF))
+       if !forceLinearModel
+           Ipopt.amplexe() do path
+               # Model declaration (efficiency model)
+               #effmodel = Model(() -> AmplNLWriter.Optimizer(path, ["print_level=0"]))
+               #effmodel = Model(optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0))
+               effmodel = Model(() -> AmplNLWriter.Optimizer("ipopt",["print_level=0"]))
+               #effmodel = Model(optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF))
 
-           # Defining variables
-           @variables effmodel begin
-               0 <= θ[z in 1:nDMUs] <= Inf, (start = startθ) # thetas (nDMUs)
-               0 <= μ[z in 1:nDMUs] <= Inf, (start = startμ) # mus (nDMUs)
-           end
-           if !crossTime
-              @variable(effmodel, 1 <= λ <= Inf, start = startλ)
-           else
-              @variable(effmodel, 0 <= λ <= Inf, start = startλ)
-           end
-
-           # Defining constraints
-           @NLconstraints effmodel begin
-               cgInp1[i in 1:nI],   # constraint on good inputs
-                  λ^dirGI * inp₀[i] >= sum(θ[z]*inp[z,i] for z in 1:nDMUs)
-               cbInp1[i in 1:nbI], # constraint on bad inputs
-                  λ^dirBI * bInp₀[i] <= sum(θ[z]*bInp[z,i] for z in 1:nDMUs)
-               cgInp2[i in 1:nI],   # second constraint on good inputs
-                  λ^dirGI * inp₀[i] >= sum(μ[z]*inp[z,i] for z in 1:nDMUs)
-               cbInp2[i in 1:nbI], # second constraint on bad inputs
-                  λ^dirBI * bInp₀[i] >= sum(μ[z]*bInp[z,i] for z in 1:nDMUs)
-               cgO1[j in 1:nGO],   # first constraint on good outputs
-                  λ^dirGO * gO₀[j] <= sum(θ[z]*gO[z,j] for z in 1:nDMUs)
-               cbO1[j in 1:nBO],   # first constraint on bad outputs
-                  λ^dirBO * bO₀[j] >= sum(θ[z]*bO[z,j] for z in 1:nDMUs)
-               cgO2[j in 1:nGO],   # second constraint on good outputs
-                  λ^dirGO * gO₀[j] <= sum(μ[z]*gO[z,j] for z in 1:nDMUs)
-               cbO2[j in 1:nBO],   # second constraint on bad outputs
-                  λ^dirBO * bO₀[j] <= sum(μ[z]*bO[z,j] for z in 1:nDMUs)
-           end
-           if retToScale == "variable"
-               @constraints effmodel begin
-                   sumtheta,
-                     sum(θ[z] for z in 1:1:nDMUs) == 1
-                   summu,
-                     sum(μ[z] for z in 1:1:nDMUs) == 1
+               # Defining variables
+               @variables effmodel begin
+                   0 <= θ[z in 1:nDMUs] <= Inf, (start = startθ) # thetas (nDMUs)
+                   0 <= μ[z in 1:nDMUs] <= Inf, (start = startμ) # mus (nDMUs)
                end
-           end
-           # Defining objective
-           @objective effmodel Max begin
-               λ
-           end
-           # Printing the model (for debugging)
-           #print(effmodel) # The model in mathematical terms is printed
+               if !crossTime
+                  @variable(effmodel, 1 <= λ <= Inf, start = startλ)
+               else
+                  @variable(effmodel, 0 <= λ <= Inf, start = startλ)
+               end
 
-           # Solving the model
-           oldstd = stdout
-           #redirect_stdout(open("/dev/null", "w"))
-           redirect_stdout(open("nul", "w"))
-           #open("nul", "w")
-           JuMP.optimize!(effmodel)
-           #redirect_stdout((()->optimize!(effmodel)),open("/dev/null", "w"))
-           redirect_stdout(oldstd) # recover original stdout
-           # Copy the results to the output matrix...
-           status = termination_status(effmodel)
+               # Defining constraints
+               @NLconstraints effmodel begin
+                   cgInp1[i in 1:nI],   # constraint on good inputs
+                      λ^dirGI * inp₀[i] >= sum(θ[z]*inp[z,i] for z in 1:nDMUs)
+                   cbInp1[i in 1:nbI], # constraint on bad inputs
+                      λ^dirBI * bInp₀[i] <= sum(θ[z]*bInp[z,i] for z in 1:nDMUs)
+                   cgInp2[i in 1:nI],   # second constraint on good inputs
+                      λ^dirGI * inp₀[i] >= sum(μ[z]*inp[z,i] for z in 1:nDMUs)
+                   cbInp2[i in 1:nbI], # second constraint on bad inputs
+                      λ^dirBI * bInp₀[i] >= sum(μ[z]*bInp[z,i] for z in 1:nDMUs)
+                   cgO1[j in 1:nGO],   # first constraint on good outputs
+                      λ^dirGO * gO₀[j] <= sum(θ[z]*gO[z,j] for z in 1:nDMUs)
+                   cbO1[j in 1:nBO],   # first constraint on bad outputs
+                      λ^dirBO * bO₀[j] >= sum(θ[z]*bO[z,j] for z in 1:nDMUs)
+                   cgO2[j in 1:nGO],   # second constraint on good outputs
+                      λ^dirGO * gO₀[j] <= sum(μ[z]*gO[z,j] for z in 1:nDMUs)
+                   cbO2[j in 1:nBO],   # second constraint on bad outputs
+                      λ^dirBO * bO₀[j] <= sum(μ[z]*bO[z,j] for z in 1:nDMUs)
+               end
+               if retToScale == "variable"
+                   @constraints effmodel begin
+                       sumtheta,
+                         sum(θ[z] for z in 1:1:nDMUs) == 1
+                       summu,
+                         sum(μ[z] for z in 1:1:nDMUs) == 1
+                   end
+               end
+               # Defining objective
+               @objective effmodel Max begin
+                   λ
+               end
+               # Printing the model (for debugging)
+               #print(effmodel) # The model in mathematical terms is printed
 
-           #if (status == MOI.OPTIMAL || status == MOI.LOCALLY_SOLVED || status == MOI.TIME_LIMIT) && has_values(effmodel)
-           if (status == MOI.OPTIMAL || status == MOI.LOCALLY_SOLVED) && has_values(effmodel)
-               return value(λ)
-           else
-               return missing
-           end
-       end # end of do function
+               # Solving the model
+               oldstd = stdout
+               #redirect_stdout(open("/dev/null", "w"))
+               redirect_stdout(open("nul", "w"))
+               #open("nul", "w")
+               JuMP.optimize!(effmodel)
+               #redirect_stdout((()->optimize!(effmodel)),open("/dev/null", "w"))
+               redirect_stdout(oldstd) # recover original stdout
+               # Copy the results to the output matrix...
+               status = termination_status(effmodel)
+
+               #if (status == MOI.OPTIMAL || status == MOI.LOCALLY_SOLVED || status == MOI.TIME_LIMIT) && has_values(effmodel)
+               if (status == MOI.OPTIMAL || status == MOI.LOCALLY_SOLVED) && has_values(effmodel)
+                   return value(λ)
+               else
+                   return missing
+               end
+           end # end of do function
+       else #forceLinearModel is then true
+
+               # Model declaration (efficiency model)
+               #effmodel = Model(() -> AmplNLWriter.Optimizer(path, ["print_level=0"]))
+               #effmodel = Model(optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0))
+               effmodel = Model(optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF)) # we choose GLPK with a verbose output
+               #effmodel = Model(optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF))
+
+               # Defining variables
+               @variables effmodel begin
+                   0 <= θ[z in 1:nDMUs] <= Inf# thetas (nDMUs)
+                   0 <= μ[z in 1:nDMUs] <= Inf # mus (nDMUs)
+               end
+
+               if dirGO == 1
+                   if !crossTime # we  keep the original λ
+                      @variable(effmodel, 1 <= λ <= Inf)
+                   else
+                      @variable(effmodel, 0 <= λ <= Inf)
+                   end
+               else
+                   if !crossTime # we use as variable its reverse 1/λ
+                      @variable(effmodel, 0 <= invλ <= 1)
+                   else
+                      @variable(effmodel, 0 <= invλ <= Inf)
+                   end
+               end
+
+               if directions == (-1,0,0,0)
+                   # Defining constraints
+                   @constraints effmodel begin
+                       cgInp1[i in 1:nI],   # constraint on good inputs
+                          invλ * inp₀[i] >= sum(θ[z]*inp[z,i] for z in 1:nDMUs)
+                       cbInp1[i in 1:nbI], # constraint on bad inputs
+                           bInp₀[i] <= sum(θ[z]*bInp[z,i] for z in 1:nDMUs)
+                       cgInp2[i in 1:nI],   # second constraint on good inputs
+                          invλ * inp₀[i] >= sum(μ[z]*inp[z,i] for z in 1:nDMUs)
+                       cbInp2[i in 1:nbI], # second constraint on bad inputs
+                           bInp₀[i] >= sum(μ[z]*bInp[z,i] for z in 1:nDMUs)
+                       cgO1[j in 1:nGO],   # first constraint on good outputs
+                           gO₀[j] <= sum(θ[z]*gO[z,j] for z in 1:nDMUs)
+                       cbO1[j in 1:nBO],   # first constraint on bad outputs
+                           bO₀[j] >= sum(θ[z]*bO[z,j] for z in 1:nDMUs)
+                       cgO2[j in 1:nGO],   # second constraint on good outputs
+                           gO₀[j] <= sum(μ[z]*gO[z,j] for z in 1:nDMUs)
+                       cbO2[j in 1:nBO],   # second constraint on bad outputs
+                           bO₀[j] <= sum(μ[z]*bO[z,j] for z in 1:nDMUs)
+                   end
+              elseif directions == (0,-1,0,0)
+                  # Defining constraints
+                  @constraints effmodel begin
+                      cgInp1[i in 1:nI],   # constraint on good inputs
+                          inp₀[i] >= sum(θ[z]*inp[z,i] for z in 1:nDMUs)
+                      cbInp1[i in 1:nbI], # constraint on bad inputs
+                         invλ * bInp₀[i] <= sum(θ[z]*bInp[z,i] for z in 1:nDMUs)
+                      cgInp2[i in 1:nI],   # second constraint on good inputs
+                          inp₀[i] >= sum(μ[z]*inp[z,i] for z in 1:nDMUs)
+                      cbInp2[i in 1:nbI], # second constraint on bad inputs
+                         invλ * bInp₀[i] >= sum(μ[z]*bInp[z,i] for z in 1:nDMUs)
+                      cgO1[j in 1:nGO],   # first constraint on good outputs
+                          gO₀[j] <= sum(θ[z]*gO[z,j] for z in 1:nDMUs)
+                      cbO1[j in 1:nBO],   # first constraint on bad outputs
+                          bO₀[j] >= sum(θ[z]*bO[z,j] for z in 1:nDMUs)
+                      cgO2[j in 1:nGO],   # second constraint on good outputs
+                          gO₀[j] <= sum(μ[z]*gO[z,j] for z in 1:nDMUs)
+                      cbO2[j in 1:nBO],   # second constraint on bad outputs
+                          bO₀[j] <= sum(μ[z]*bO[z,j] for z in 1:nDMUs)
+                  end
+              elseif directions == (0,0,1,0)
+                  @constraints effmodel begin
+                      cgInp1[i in 1:nI],   # constraint on good inputs
+                          inp₀[i] >= sum(θ[z]*inp[z,i] for z in 1:nDMUs)
+                      cbInp1[i in 1:nbI], # constraint on bad inputs
+                          bInp₀[i] <= sum(θ[z]*bInp[z,i] for z in 1:nDMUs)
+                      cgInp2[i in 1:nI],   # second constraint on good inputs
+                          inp₀[i] >= sum(μ[z]*inp[z,i] for z in 1:nDMUs)
+                      cbInp2[i in 1:nbI], # second constraint on bad inputs
+                          bInp₀[i] >= sum(μ[z]*bInp[z,i] for z in 1:nDMUs)
+                      cgO1[j in 1:nGO],   # first constraint on good outputs
+                         λ * gO₀[j] <= sum(θ[z]*gO[z,j] for z in 1:nDMUs)
+                      cbO1[j in 1:nBO],   # first constraint on bad outputs
+                          bO₀[j] >= sum(θ[z]*bO[z,j] for z in 1:nDMUs)
+                      cgO2[j in 1:nGO],   # second constraint on good outputs
+                         λ * gO₀[j] <= sum(μ[z]*gO[z,j] for z in 1:nDMUs)
+                      cbO2[j in 1:nBO],   # second constraint on bad outputs
+                         bO₀[j] <= sum(μ[z]*bO[z,j] for z in 1:nDMUs)
+                  end
+              elseif directions == (0,0,0,-1)
+                  # Defining constraints
+                  @constraints effmodel begin
+                      cgInp1[i in 1:nI],   # constraint on good inputs
+                         inp₀[i] >= sum(θ[z]*inp[z,i] for z in 1:nDMUs)
+                      cbInp1[i in 1:nbI], # constraint on bad inputs
+                         bInp₀[i] <= sum(θ[z]*bInp[z,i] for z in 1:nDMUs)
+                      cgInp2[i in 1:nI],   # second constraint on good inputs
+                         inp₀[i] >= sum(μ[z]*inp[z,i] for z in 1:nDMUs)
+                      cbInp2[i in 1:nbI], # second constraint on bad inputs
+                          bInp₀[i] >= sum(μ[z]*bInp[z,i] for z in 1:nDMUs)
+                      cgO1[j in 1:nGO],   # first constraint on good outputs
+                          gO₀[j] <= sum(θ[z]*gO[z,j] for z in 1:nDMUs)
+                      cbO1[j in 1:nBO],   # first constraint on bad outputs
+                         invλ * bO₀[j] >= sum(θ[z]*bO[z,j] for z in 1:nDMUs)
+                      cgO2[j in 1:nGO],   # second constraint on good outputs
+                         gO₀[j] <= sum(μ[z]*gO[z,j] for z in 1:nDMUs)
+                      cbO2[j in 1:nBO],   # second constraint on bad outputs
+                         invλ * bO₀[j] <= sum(μ[z]*bO[z,j] for z in 1:nDMUs)
+                  end
+
+              else
+                  @error "Directions not suppported when the option forceLinearModel is true"
+              end
+               if retToScale == "variable"
+                   @constraints effmodel begin
+                       sumtheta,
+                         sum(θ[z] for z in 1:1:nDMUs) == 1
+                       summu,
+                         sum(μ[z] for z in 1:1:nDMUs) == 1
+                   end
+               end
+
+               # Defining objective
+               if dirGO == 1
+                   @objective effmodel Max begin
+                       λ
+                   end
+               else
+                   @objective effmodel Min begin
+                       invλ
+                   end
+               end
+               # Printing the model (for debugging)
+               #print(effmodel) # The model in mathematical terms is printed
+
+
+               JuMP.optimize!(effmodel)
+
+               # Copy the results to the output matrix...
+               status = termination_status(effmodel)
+
+               #if (status == MOI.OPTIMAL || status == MOI.LOCALLY_SOLVED || status == MOI.TIME_LIMIT) && has_values(effmodel)
+               if (status == MOI.OPTIMAL || status == MOI.LOCALLY_SOLVED) && has_values(effmodel)
+                   if dirGO == 1
+                       return value(λ)
+                   else
+                       return 1/value(invλ)
+                   end
+               else
+                   return missing
+               end
+
+
+        end   # end of forCeLinearModel == true
    else # prodStructure is then additive...
        # Model declaration (efficiency model)
        effmodel = Model(optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF)) # we choose GLPK with a verbose output
@@ -148,7 +304,7 @@ function convexProblem(inp₀,bInp₀,gO₀,bO₀,inp,bInp,gO,bO;
            λ
        end
        # Printing the model (for debugging)
-       #print(effmodel) # The model in mathematical terms is printed
+       # print(effmodel) # The model in mathematical terms is printed
 
        # Solving the model
        optimize!(effmodel)
@@ -207,13 +363,13 @@ Compute the efficiency score for a DMU using vanilla Data Envelope Analysis.
   - `obj`: a scalar representing the efficiency score of the DMU
   - `wI`: a vector of the optimal input weights
   - `wO`: a vector of the optimal output weights
-  - `refSet`: a dictionary having as key the numearal of the reference DMUs and
+  - `refSet`: a dictionary having as key the numeral of the reference DMUs and
   values the relative constraint duals
 """
 function dmuEfficiency(I₀,O₀,I,O) # # Cooper & oth., p.23-24 and 43
     (nDMU,nI,nO) = size(I,1), size(I,2), size(O,2)
 
-    effmodel = Model(optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF)) # we choose GLPK with a verbose output
+    effmodel = Model(optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF)) # we choose GLPK with a null output
     # Defining variables
     @variables effmodel begin
         wI[i in 1:nI] >= 0  # inputs weigths

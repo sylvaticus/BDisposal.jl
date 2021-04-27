@@ -1,5 +1,5 @@
 
-using Test, DataFrames, CSV, BDisposal, Plots
+using Test, DataFrames, CSV, BDisposal
 println("Testing BDisposal...")
 
 # Aitport data test with only one input category...
@@ -68,19 +68,20 @@ for (p,period) in enumerate(periods)
 end
 
 prodIndices = prodIndex(gI,gO,bO,bI;
-                   retToScale="constant",prodStructure="multiplicative",convexAssumption=true,
-                   startθ=0,startμ=0,startλ=1.1)
+                   retToScale="constant",prodStructure="multiplicative",convexAssumption=true)
 
 @test prodIndices[3,2] ≈ 1.147467571896574
 
 prodIndices = prodIndex(gI,gO,bO,bI;
-                   retToScale="variable",prodStructure="multiplicative",convexAssumption=true,
-                   startθ=0,startμ=0,startλ=1.1)
+                   retToScale="variable",prodStructure="multiplicative",convexAssumption=true)
+
 
 prodIndices = prodIndex(gI,gO,bO,bI;
-                  retToScale="variable",prodStructure="additive",convexAssumption=true,
-                  startθ=0,startμ=0,startλ=1.1)
+                  retToScale="variable",prodStructure="additive",convexAssumption=true)
+
 @test prodIndices[3,2] ≈ -0.09534201521261434
+
+
 
 # Basic testing of dmuEfficiency
 I  = [10 2; 8 4; 12 1.5; 24 3]
@@ -138,6 +139,46 @@ efficiencies = [dmuEfficiency(I[d,:],O[d,:],I,O)[:obj] for  d in 1:nDMU]
 efficiencies = hcat(1:nDMU,efficiencies)
 efficiencies = efficiencies[sortperm(efficiencies[:, 2],rev=true), :]
 
+# Test treating last output as bad
+O2 = convert(Array{Float64,2},copy(O))
+O2[:,3] = 1 ./ O2[:,3] # third is a bad output
+efficiencies = [dmuEfficiency(I[d,:],O2[d,:],I,O2)[:obj] for  d in 1:nDMU]
+efficiencies = hcat(1:nDMU,efficiencies)
+efficiencies = efficiencies[sortperm(efficiencies[:, 2],rev=true), :]
+
+
+#Table 13.1 Cooper 2006
+I = ones(Float64,9)
+O = [
+1 1
+2 1
+6 2
+8 4
+9 7
+5 2
+4 3
+6 4
+4 6
+]
+nDMU = size(I,1)
+O2 = convert(Array{Float64,2},copy(O))
+O2[:,2] = 1 ./ O2[:,2] # third is a bad output
+O2
+efficiencies = [dmuEfficiency(I[d,:],O2[d,:],I,O2)[:obj] for  d in 1:nDMU]
+efficiencies = hcat(1:nDMU,efficiencies)
+efficiencies = efficiencies[sortperm(efficiencies[:, 2],rev=true), :]
+
+O = [
+1 1
+2 1
+6 2
+8 4
+9 7
+5 2
+4 3
+6 4
+4 6
+]
 I = [
 4	140
 5	90
@@ -216,3 +257,5 @@ out = [dmuEfficiency(X[:,d],Y[:,d],X',Y') for  d in 1:nDMU]
 
 outDual = [dmuEfficiencyDual(X[:,d],Y[:,d],X',Y') for  d in 1:nDMU]
 @test [i[:eff] for i in outDual] == [false,false,true,true,true,false]
+
+a = outDual[1]
