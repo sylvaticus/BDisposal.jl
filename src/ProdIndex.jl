@@ -23,7 +23,8 @@ productivity indexes improvements (or declines) between consecutive time periods
   *  `convexAssumption`: Wheter a convex production frontier should be assumed [default: `true`]
 
 ## Returns:
-* A matrix of production indexes by DMUs and period passages (e.g. "year2 on year1" and "year3 on year2")
+* A touple where the first element is a matrix of production indexes by DMUs and period passages (e.g. "year2 on year1" and "year3 on year2"). The second and third element of the tuple are respectively the "good inputs/outputs" and "bad/inputs/outputs" components. The first matrix can be retrieved from the two components by multiplying them (for `multiplicative` production structure) or summing them (for `additive` production strucure).
+
 
 ## Description of the function
 
@@ -53,13 +54,15 @@ technical and scale efficiency components.
 * The non-convex problem still need to consider bad inputs, consider directions, consider multiplicative/additive structures
 
 """
-function prodIndexInner(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3},bI::Array{Float64,3}=Array{Float64}(undef, (size(gI,1),0,size(gI,3)));
-                   retToScale="constant",prodStructure="multiplicative",convexAssumption=true,partition="full")
+function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3},bI::Array{Float64,3}=Array{Float64}(undef, (size(gI,1),0,size(gI,3)));
+                   retToScale="constant",prodStructure="multiplicative",convexAssumption=true)
 
     nDMUs = size(gI,1)
     nPer = size(gI,3)
     nBI  = size(bI,2)
     prodIndexes = Array{Union{Float64,Missing}}(undef, (size(gI,1),nPer-1))
+    prodIndexesG = Array{Union{Float64,Missing}}(undef, (size(gI,1),nPer-1))
+    prodIndexesB = Array{Union{Float64,Missing}}(undef, (size(gI,1),nPer-1))
 
     noBadIndexDefault = prodStructure == "multiplicative" ? 1.0 : 0.0
 
@@ -156,85 +159,70 @@ function prodIndexInner(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Floa
                         convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
                         directions=dirBO,crossTime=true)
 
-        
 
-            if partition == "full"
-                if prodStructure == "multiplicative"
-                   idx_i_t = (idx_gi_t̃/idx_gi_t) * (idx_bi_t̃/idx_bi_t)
-                   idx_o_t = (idx_go_t̃/idx_go_t) * (idx_bo_t̃/idx_bo_t)
-                   idx_t   = idx_o_t/idx_i_t
-                   idx_i_u = (idx_gi_u/idx_gi_ũ) * (idx_bi_u/idx_bi_ũ)
-                   idx_o_u = (idx_go_u/idx_go_ũ) * (idx_bo_u/idx_bo_ũ)
-                   idx_u   = idx_o_u/idx_i_u
-                   idx     = (idx_t * idx_u)^(1/2)
+            # Computing aggregated for the full (gI,Bi,bO,gO) partition...
+            if prodStructure == "multiplicative"
+               idx_i_t = (idx_gi_t̃/idx_gi_t) * (idx_bi_t̃/idx_bi_t)
+               idx_o_t = (idx_go_t̃/idx_go_t) * (idx_bo_t̃/idx_bo_t)
+               idx_t   = idx_o_t/idx_i_t
+               idx_i_u = (idx_gi_u/idx_gi_ũ) * (idx_bi_u/idx_bi_ũ)
+               idx_o_u = (idx_go_u/idx_go_ũ) * (idx_bo_u/idx_bo_ũ)
+               idx_u   = idx_o_u/idx_i_u
+               idx     = (idx_t * idx_u)^(1/2)
 
-                else
-                    idx_i_t = (idx_gi_t̃ - idx_gi_t) + (idx_bi_t̃ - idx_bi_t)
-                    idx_o_t = (idx_go_t - idx_go_t̃) + (idx_bo_t - idx_bo_t̃)
-                    idx_t   = idx_o_t - idx_i_t
-                    idx_i_u = (idx_gi_u - idx_gi_ũ) + (idx_bi_u - idx_bi_ũ)
-                    idx_o_u = (idx_go_ũ - idx_go_u) + (idx_bo_ũ - idx_bo_u)
-                    idx_u   = idx_o_u - idx_i_u
-                    idx     = (idx_t + idx_u) / 2
-                end
-
-            elseif partition == "onlyGoodIO"
-
-                if prodStructure == "multiplicative"
-                   idx_i_t = (idx_gi_t̃/idx_gi_t)
-                   idx_o_t = (idx_go_t̃/idx_go_t)
-                   idx_t   = idx_o_t/idx_i_t
-                   idx_i_u = (idx_gi_u/idx_gi_ũ)
-                   idx_o_u = (idx_go_u/idx_go_ũ)
-                   idx_u   = idx_o_u/idx_i_u
-                   idx     = (idx_t * idx_u)^(1/2)
-
-                else
-                    idx_i_t = (idx_gi_t̃ - idx_gi_t)
-                    idx_o_t = (idx_go_t - idx_go_t̃)
-                    idx_t   = idx_o_t - idx_i_t
-                    idx_i_u = (idx_gi_u - idx_gi_ũ)
-                    idx_o_u = (idx_go_ũ - idx_go_u)
-                    idx_u   = idx_o_u - idx_i_u
-                    idx     = (idx_t + idx_u) / 2
-                end
-
-            elseif partition == "onlyBadIO"
-                if prodStructure == "multiplicative"
-                   idx_i_t =  (idx_bi_t̃/idx_bi_t)
-                   idx_o_t =  (idx_bo_t̃/idx_bo_t)
-                   idx_t   = idx_o_t/idx_i_t
-                   idx_i_u = (idx_bi_u/idx_bi_ũ)
-                   idx_o_u =  (idx_bo_u/idx_bo_ũ)
-                   idx_u   = idx_o_u/idx_i_u
-                   idx     = (idx_t * idx_u)^(1/2)
-
-                else
-                    idx_i_t = (idx_bi_t̃ - idx_bi_t)
-                    idx_o_t = (idx_bo_t - idx_bo_t̃)
-                    idx_t   = idx_o_t - idx_i_t
-                    idx_i_u = (idx_bi_u - idx_bi_ũ)
-                    idx_o_u = (idx_bo_ũ - idx_bo_u)
-                    idx_u   = idx_o_u - idx_i_u
-                    idx     = (idx_t + idx_u) / 2
-                end
+            else
+                idx_i_t = (idx_gi_t̃ - idx_gi_t) + (idx_bi_t̃ - idx_bi_t)
+                idx_o_t = (idx_go_t - idx_go_t̃) + (idx_bo_t - idx_bo_t̃)
+                idx_t   = idx_o_t - idx_i_t
+                idx_i_u = (idx_gi_u - idx_gi_ũ) + (idx_bi_u - idx_bi_ũ)
+                idx_o_u = (idx_go_ũ - idx_go_u) + (idx_bo_ũ - idx_bo_u)
+                idx_u   = idx_o_u - idx_i_u
+                idx     = (idx_t + idx_u) / 2
             end
             prodIndexes[z,t] = idx
-        end
-    end
-    return prodIndexes
-end
 
-function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3},bI::Array{Float64,3}=Array{Float64}(undef, (size(gI,1),0,size(gI,3)));
-                   retToScale="constant",prodStructure="multiplicative",convexAssumption=true,)
+            # Computing aggregated for the good inputs/outputs only...
+            if prodStructure == "multiplicative"
+               idx_i_t = (idx_gi_t̃/idx_gi_t)
+               idx_o_t = (idx_go_t̃/idx_go_t)
+               idx_t   = idx_o_t/idx_i_t
+               idx_i_u = (idx_gi_u/idx_gi_ũ)
+               idx_o_u = (idx_go_u/idx_go_ũ)
+               idx_u   = idx_o_u/idx_i_u
+               idx     = (idx_t * idx_u)^(1/2)
 
-                   # case1: partitioned
-                   prodIndexResultPartitioned = prodIndexInner(gI,gO,bO,bI,retToScale=retToScale,prodStructure=prodStructure,convexAssumption=convexAssumption,partition="full")
-                   # case2: get results from "good components" only
-                   prodIndexResultGoodComponents = prodIndexInner(gI,gO,bO,bI,retToScale=retToScale,prodStructure=prodStructure,convexAssumption=convexAssumption,partition="onlyGoodIO")
-                   # case3:: get results from "bad components" only
-                   prodIndexResultBadComponents = prodIndexInner(gI,gO,bO,bI,retToScale=retToScale,prodStructure=prodStructure,convexAssumption=convexAssumption,partition="onlyBadIO")
+            else
+                idx_i_t = (idx_gi_t̃ - idx_gi_t)
+                idx_o_t = (idx_go_t - idx_go_t̃)
+                idx_t   = idx_o_t - idx_i_t
+                idx_i_u = (idx_gi_u - idx_gi_ũ)
+                idx_o_u = (idx_go_ũ - idx_go_u)
+                idx_u   = idx_o_u - idx_i_u
+                idx     = (idx_t + idx_u) / 2
+            end
+            prodIndexesG[z,t] = idx
 
-                  return (prodIndexResultPartitioned,prodIndexResultGoodComponents, prodIndexResultBadComponents)
+            # Computing aggregated for the bad inputs/outputs only...
+            if prodStructure == "multiplicative"
+               idx_i_t = (idx_bi_t̃/idx_bi_t)
+               idx_o_t = (idx_bo_t̃/idx_bo_t)
+               idx_t   = idx_o_t/idx_i_t
+               idx_i_u = (idx_bi_u/idx_bi_ũ)
+               idx_o_u = (idx_bo_u/idx_bo_ũ)
+               idx_u   = idx_o_u/idx_i_u
+               idx     = (idx_t * idx_u)^(1/2)
 
+            else
+                idx_i_t = (idx_bi_t̃ - idx_bi_t)
+                idx_o_t = (idx_bo_t - idx_bo_t̃)
+                idx_t   = idx_o_t - idx_i_t
+                idx_i_u = (idx_bi_u - idx_bi_ũ)
+                idx_o_u = (idx_bo_ũ - idx_bo_u)
+                idx_u   = idx_o_u - idx_i_u
+                idx     = (idx_t + idx_u) / 2
+            end
+            prodIndexesB[z,t] = idx
+        end # end for each DMU
+    end # end for each period
+    return prodIndexes, prodIndexesG, prodIndexesB
 end

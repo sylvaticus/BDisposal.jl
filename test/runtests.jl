@@ -67,25 +67,28 @@ for (p,period) in enumerate(periods)
     bO[:,:,p] = convert(Matrix{Float64},periodData[:,airportBadOutputs])
 end
 
-prodIndices = prodIndex(gI,gO,bO,bI;
+(prodIndices,prodIndicesG, prodIndicesB)  = prodIndex(gI,gO,bO,bI;
                    retToScale="constant",prodStructure="multiplicative",convexAssumption=true)
 
+@test prodIndices[3,2] ≈ 1.147467571896574
+@test prodIndices[5,1] ≈ 0.8927004886654548
 
-prodIndices = prodIndex(gI,gO,bO,bI;
-                  retToScale="constant",prodStructure="multiplicative",convexAssumption=true)
+@test prodIndices ≈ prodIndicesG .* prodIndicesB
 
 
-@test prodIndices[1][3,2] ≈ 1.147467571896574
 
-prodIndices = prodIndex(gI,gO,bO,bI;
+(prodIndicesV,prodIndicesGV, prodIndicesBV) = prodIndex(gI,gO,bO,bI;
                    retToScale="variable",prodStructure="multiplicative",convexAssumption=true)
 
+@test prodIndicesV[3,2] ≈ prodIndices[3,2]
+@test prodIndicesV[5,1] == 0.896377214928534
 
-prodIndices = prodIndex(gI,gO,bO,bI;
+
+(prodIndices,prodIndicesG, prodIndicesB) = prodIndex(gI,gO,bO,bI;
                   retToScale="variable",prodStructure="additive",convexAssumption=true)
 
-@test prodIndices[1][3,2] ≈ -0.09534201521261434
-
+@test prodIndices[3,2] ≈ -0.09534201521261434
+@test prodIndices ≈ prodIndicesG .+ prodIndicesB
 
 
 # Basic testing of dmuEfficiency
