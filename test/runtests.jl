@@ -67,29 +67,35 @@ for (p,period) in enumerate(periods)
     bO[:,:,p] = convert(Matrix{Float64},periodData[:,airportBadOutputs])
 end
 
-(prodIndices,prodIndicesG, prodIndicesB)  = prodIndex(gI,gO,bO,bI;
+airportAnalysis  = prodIndex(gI,gO,bO,bI;
                    retToScale="constant",prodStructure="multiplicative",convexAssumption=true)
 
-@test prodIndices[3,2] ≈ 1.147467571896574
-@test prodIndices[5,1] ≈ 0.8927004886654548
+@test airportAnalysis.prodIndexes[3,2] ≈ 1.147467571896574
+@test airportAnalysis.prodIndexes[5,1] ≈ 0.8927004886654548
 
-@test prodIndices ≈ prodIndicesG .* prodIndicesB
+@test airportAnalysis.prodIndexes ≈ airportAnalysis.prodIndexes_G .* airportAnalysis.prodIndexes_B
 
 
+@test  airportAnalysis.prodIndexes ≈ airportAnalysis.prodIndexes_T_G_O .* airportAnalysis.prodIndexes_T_B_O .* airportAnalysis.prodIndexes_E_G_O .* airportAnalysis.prodIndexes_E_B_O .* airportAnalysis.prodIndexes_S_G_O .* airportAnalysis.prodIndexes_S_B_O
+@test  airportAnalysis.prodIndexes ≈ airportAnalysis.prodIndexes_T_G_I .* airportAnalysis.prodIndexes_T_B_I .* airportAnalysis.prodIndexes_E_G_I .* airportAnalysis.prodIndexes_E_B_I .* airportAnalysis.prodIndexes_S_G_I .* airportAnalysis.prodIndexes_S_B_I
+@test  airportAnalysis.prodIndexes ≈ airportAnalysis.prodIndexes_T .* airportAnalysis.prodIndexes_E .* airportAnalysis.prodIndexes_S
 
-(prodIndicesV,prodIndicesGV, prodIndicesBV) = prodIndex(gI,gO,bO,bI;
+
+airportAnalysisVRTS  = prodIndex(gI,gO,bO,bI;
                    retToScale="variable",prodStructure="multiplicative",convexAssumption=true)
 
-@test prodIndicesV[3,2] ≈ prodIndices[3,2]
-@test prodIndicesV[5,1] == 0.896377214928534
+@test airportAnalysisVRTS.prodIndexes[3,2] ≈ airportAnalysis.prodIndexes[3,2]
+@test airportAnalysisVRTS.prodIndexes[5,1] == 0.896377214928534
 
-
-(prodIndices,prodIndicesG, prodIndicesB) = prodIndex(gI,gO,bO,bI;
+airportAnalysisVRTS_a = prodIndex(gI,gO,bO,bI;
                   retToScale="variable",prodStructure="additive",convexAssumption=true)
 
-@test prodIndices[3,2] ≈ -0.09534201521261434
-@test prodIndices ≈ prodIndicesG .+ prodIndicesB
+@test airportAnalysisVRTS_a.prodIndexes[3,2] ≈ -0.09534201521261434
+@test airportAnalysisVRTS_a.prodIndexes ≈ airportAnalysisVRTS_a.prodIndexes_G .+ airportAnalysisVRTS_a.prodIndexes_B
 
+@test  airportAnalysisVRTS_a.prodIndexes ≈ airportAnalysisVRTS_a.prodIndexes_T_G_O .+ airportAnalysisVRTS_a.prodIndexes_T_B_O .+ airportAnalysisVRTS_a.prodIndexes_E_G_O .+ airportAnalysisVRTS_a.prodIndexes_E_B_O .+ airportAnalysisVRTS_a.prodIndexes_S_G_O .+ airportAnalysisVRTS_a.prodIndexes_S_B_O
+@test  airportAnalysisVRTS_a.prodIndexes ≈ airportAnalysisVRTS_a.prodIndexes_T_G_I .+ airportAnalysisVRTS_a.prodIndexes_T_B_I .+ airportAnalysisVRTS_a.prodIndexes_E_G_I .+ airportAnalysisVRTS_a.prodIndexes_E_B_I .+ airportAnalysisVRTS_a.prodIndexes_S_G_I .+ airportAnalysisVRTS_a.prodIndexes_S_B_I
+@test  airportAnalysisVRTS_a.prodIndexes ≈ airportAnalysisVRTS_a.prodIndexes_T .+ airportAnalysisVRTS_a.prodIndexes_E .+ airportAnalysisVRTS_a.prodIndexes_S
 
 # Basic testing of dmuEfficiency
 I  = [10 2; 8 4; 12 1.5; 24 3]

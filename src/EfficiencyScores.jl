@@ -104,12 +104,17 @@ function efficiencyScores(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Fl
             #bIₜ₀ = nBI > 0 ? bIₜ[z,:] : Float64[]
             bIₜ₀ = bIₜ[z,:]
 
+
             # CONVEX analysis....
+            linearModelPossibleDirections = [(-1,0,0,0),(0,-1,0,0),(0,0,1,0),(0,0,0,-1)]
+            forceLinearModel = (dirGI,dirBI,dirGO,dirBO) in linearModelPossibleDirections ?  true : false
+
             λs_convex[z,t] = problem(gIₜ₀,bIₜ₀,gOₜ₀,bOₜ₀,gIₜ,bIₜ,gOₜ,bOₜ;
                                      retToScale=retToScale,prodStructure=prodStructure,
                                      convexAssumption=true,
                                      directions=(dirGI,dirBI,dirGO,dirBO),
-                                     startValues=(startθ,startμ,startλ))
+                                     startValues=(startθ,startμ,startλ),
+                                     forceLinearModel=forceLinearModel)
 
             # NON Convex analysis
             λs_nonconvex[z,t] = problem(gIₜ₀,bIₜ₀,gOₜ₀,bOₜ₀,gIₜ,bIₜ,gOₜ,bOₜ;
