@@ -3,7 +3,7 @@ using Test, DataFrames, CSV, BDisposal
 println("Testing BDisposal...")
 
 # Aitport data test with only one input category...
-airportData = CSV.read(joinpath(@__DIR__,"data","airports.csv"),DataFrame; delim=';',copycols=true)
+airportData = CSV.read(joinpath(dirname(pathof(BDisposal)),"..","test","data","airports.csv"),DataFrame; delim=';',copycols=true)
 airportGoodInputs  = ["employees","totalCosts"]
 airportBadInputs   = []
 airportGoodOutputs = ["passengers"]

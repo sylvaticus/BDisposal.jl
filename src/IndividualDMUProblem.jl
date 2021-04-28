@@ -324,68 +324,98 @@ end # ending convexProblem
 function nonConvexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
                        retToScale,prodStructure,
                        directions)
+
+
+    nGI, nGO, nBO, nDMUs, nBI = length(gI₀), length(gO₀), length(bO₀), size(gI,1), length(bI₀)
+    (dirGI,dirBI,dirGO,dirBO) = directions
+
+    if directions == (1,0,0,0)
+        if prodStructure == "multiplicative"
+            if retToScale != "constant"
+                gI_ratio  =  gI ./ gI₀' # nDMU x ngI
+                # Normal dist function
+                bIConstraint = all(bI₀'  .>=   bI, dims=2)
+                gOConstraint = all(gO₀'  .<=   gO, dims=2)
+                bOConstraint = all(bO₀'  .<=   bO, dims=2)
+                globalContraint = dropdims(all(hcat(bIConstraint,gOConstraint,bOConstraint), dims=2), dims=2)
+                effScore_normal = maximum(gI_ratio[globalContraint,:])
+                # Bdisposal Distance function
+                bIConstraint = all(bI₀'  .>=   bI, dims=2)
+                gOConstraint = all(gO₀'  .<=   gO, dims=2)
+                bOConstraint = all(bO₀'  .>=   bO, dims=2)
+                globalContraint = dropdims(all(hcat(bIConstraint,gOConstraint,bOConstraint), dims=2), dims=2)
+                effScore_bfrontier = maximum(gI_ratio[globalContraint,:])
+                effscore = max(effScore_normal,effScore_bfrontier)
+                return effscore
+            else # constant RTS
+
+
+            end
+        else # addittive prod structure
+            if retToScale != "constant"
+                gI_ratio  =  1 .- (gI ./ gI₀') # nDMU x ngI
+                # Normal dist function
+                bIConstraint = all(bI₀'  .>=   bI, dims=2)
+                gOConstraint = all(gO₀'  .<=   gO, dims=2)
+                bOConstraint = all(bO₀'  .<=   bO, dims=2)
+                globalContraint = dropdims(all(hcat(bIConstraint,gOConstraint,bOConstraint), dims=2), dims=2)
+                effScore_normal = maximum(gI_ratio[globalContraint,:])
+                # Bdisposal Distance function
+                bIConstraint = all(bI₀'  .>=   bI, dims=2)
+                gOConstraint = all(gO₀'  .<=   gO, dims=2)
+                bOConstraint = all(bO₀'  .>=   bO, dims=2)
+                globalContraint = dropdims(all(hcat(bIConstraint,gOConstraint,bOConstraint), dims=2), dims=2)
+                effScore_bfrontier = maximum(gI_ratio[globalContraint,:])
+                effscore = min(effScore_normal,effScore_bfrontier)
+                return effscore
+            else # constant RTS
+
+
+            end
+        end
+    elseif directions == (0,1,0,0) # directions (1,0,0,0)
+
+    elseif directions == (0,0,-1,0)
+
+    elseif directions == (0,0,0,1)
+
+    else
+        @error "Directions not supported"
+    end 
+
+
+
+
+
+
 #=
-using CSV, DataFrames
-airportData = CSV.read(joinpath(@__DIR__,"../test/data","airports.csv"),DataFrame; delim=';',copycols=true)
-airportGoodInputs  = ["employees"]
-airportBadInputs   = ["totalCosts"]
-airportGoodOutputs = ["passengers"]
-airportBadOutputs  = ["co2emissions"]
-sort!(airportData, [:period, :dmu]) # sort data by period and dmu
-periods = unique(airportData.period)
-dmus    = unique(airportData.dmu)
 
-nGI, nBI, nGO, nBO, nPer, nDMUs,  = length(airportGoodInputs), length(airportBadInputs), length(airportGoodOutputs), length(airportBadOutputs), length(periods),length(dmus)
+    # TODO: consider bad inputs, consider directions, consider multiplicative/additive structure
 
-gI = Array{Float64}(undef, (nDMUs,nGI,nPer))
-bI = Array{Float64}(undef, (nDMUs,nBI,nPer))
-gO = Array{Float64}(undef, (nDMUs,nGO,nPer))
-bO = Array{Float64}(undef, (nDMUs,nBO,nPer))
+if prodStructure == "multiplicative"
 
-for (p,period) in enumerate(periods)
-   periodData = airportData[airportData.period .== period,:]
-   gI[:,:,p] = convert(Matrix{Float64},periodData[:,airportGoodInputs])
-   if nBI > 0
-       bI[:,:,p] = convert(Matrix{Float64},periodData[:,airportBadInputs])
-   end
-   gO[:,:,p] = convert(Matrix{Float64},periodData[:,airportGoodOutputs])
-   bO[:,:,p] = convert(Matrix{Float64},periodData[:,airportBadOutputs])
-end
+    gI_ratio  =  gI₀' ./ gI
+    bI_ratio  =  bI₀' ./ bI
+    gO_ratio  =  gO ./ gO₀'
+    bO_ratio  =  bO ./ bO₀'
 
-
-gI₀ = gI[1,:,1]
-bI₀ = bI[1,:,1]
-gO₀ = gO[1,:,1]
-bO₀ = bO[1,:,1]
-gI
-bI
-gO
-bO
-retToScale
-prodStructure
-directions
-
+    if retToScale == "constant"
+        normalFrontierDistances   = [minimum(gI_ratio[z,:]) * minimum(hcat(gO_ratio,bO_ratio)[z,:]) for z in 1:nDMUs]
+        bFrontierDistances        = [minimum(gI_ratio[z,:]) * minimum(gO_ratio[z,:]) * (minimum(gO_ratio[z,:]) >= minimum(bO_ratio[z,:])) for z in 1:nDMUs]
+    else
+        normalFrontierDistances   = [minimum(gI_ratio[z,:]) * minimum(hcat(gO_ratio,bO_ratio)[z,:] * ( minimum(gI_ratio[z,:]) >= (1.0 - eps()) ) ) for z in 1:nDMUs]
+        bFrontierDistances        = [minimum(gI_ratio[z,:]) * minimum(gO_ratio[z,:]) * (minimum(gO_ratio[z,:]) >= minimum(bO_ratio[z,:]) &&  minimum(gI_ratio[z,:]) >= (1.0 - eps())    ) for z in 1:nDMUs]
+    end
+    return min(maximum(normalFrontierDistances),maximum(bFrontierDistances))
+else
 =#
 
 
-nGI, nGO, nBO, nDMUs, nBI = length(gI₀), length(gO₀), length(bO₀), size(gI,1), length(bI₀)
-(dirGI,dirBI,dirGO,dirBO) = directions
-
-# TODO: consider bad inputs, consider directions, consider multiplicative/additive structure
-gI_ratio  =  gI₀' ./ gI
-gO_ratio  =  gO ./ gO₀'
-bO_ratio  =  bO ./ bO₀'
 
 
-if retToScale == "constant"
-    normalFrontierDistances   = [minimum(gI_ratio[z,:]) * minimum(hcat(gO_ratio,bO_ratio)[z,:]) for z in 1:nDMUs]
-    bFrontierDistances        = [minimum(gI_ratio[z,:]) * minimum(gO_ratio[z,:]) * (minimum(gO_ratio[z,:]) >= minimum(bO_ratio[z,:])) for z in 1:nDMUs]
-else
-    normalFrontierDistances   = [minimum(gI_ratio[z,:]) * minimum(hcat(gO_ratio,bO_ratio)[z,:] * ( minimum(gI_ratio[z,:]) >= (1.0 - eps()) ) ) for z in 1:nDMUs]
-    bFrontierDistances        = [minimum(gI_ratio[z,:]) * minimum(gO_ratio[z,:]) * (minimum(gO_ratio[z,:]) >= minimum(bO_ratio[z,:]) &&  minimum(gI_ratio[z,:]) >= (1.0 - eps())    ) for z in 1:nDMUs]
-end
-return min(maximum(normalFrontierDistances),maximum(bFrontierDistances))
-end
+
+
+end # end function
 
 
 """
