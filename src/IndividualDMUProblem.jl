@@ -36,12 +36,13 @@ function convexProblem(inp₀,bInp₀,gO₀,bO₀,inp,bInp,gO,bO;
 
    if prodStructure == "multiplicative"
        if !forceLinearModel
-           Ipopt.amplexe() do path
+               # Redirecting the output to /deV/null as no way to suppress ipopt output
+               oldstd = stdout
+               redirect_stdout(open("nul", "w"))
+
                # Model declaration (efficiency model)
-               #effmodel = Model(() -> AmplNLWriter.Optimizer(path, ["print_level=0"]))
-               #effmodel = Model(optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0))
-               effmodel = Model(() -> AmplNLWriter.Optimizer("ipopt",["print_level=0"]))
-               #effmodel = Model(optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF))
+               effmodel = Model(() -> AmplNLWriter.Optimizer(Ipopt.amplexe))
+               MOI.set(effmodel, MOI.RawParameter("print_level"), 0)
 
                # Defining variables
                @variables effmodel begin
@@ -88,20 +89,12 @@ function convexProblem(inp₀,bInp₀,gO₀,bO₀,inp,bInp,gO,bO;
                # Printing the model (for debugging)
                #print(effmodel) # The model in mathematical terms is printed
 
-               println("aa")
-               println("bb")
+
                # Solving the model
-               oldstd = stdout
-               #redirect_stdout(open("/dev/null", "w"))
-               redirect_stdout(open("nul", "w"))
-               println("cc")
-               #open("nul", "w")
                JuMP.optimize!(effmodel)
-               #redirect_stdout((()->optimize!(effmodel)),open("/dev/null", "w"))
-               println("dd")
                redirect_stdout(oldstd) # recover original stdout
+               
                # Copy the results to the output matrix...
-               println("ee")
                status = termination_status(effmodel)
 
                #if (status == MOI.OPTIMAL || status == MOI.LOCALLY_SOLVED || status == MOI.TIME_LIMIT) && has_values(effmodel)
@@ -110,7 +103,6 @@ function convexProblem(inp₀,bInp₀,gO₀,bO₀,inp,bInp,gO,bO;
                else
                    return missing
                end
-           end # end of do function
        else #forceLinearModel is then true
 
                # Model declaration (efficiency model)

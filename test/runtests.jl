@@ -116,7 +116,7 @@ bO₀ = bOₜ[1,:]
 
 
 score = problem(gI₀,bI₀,gO₀,bO₀,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",
-        prodStructure="multiplicative",convexAssumption=false,directions=(1,0,0,0),
+        prodStructure="multiplicative",convexAssumption=true,directions=(1,0,0,0),
         startValues=(0,0,1.1))
 
 
