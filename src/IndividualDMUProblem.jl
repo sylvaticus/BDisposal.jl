@@ -380,8 +380,22 @@ function nonConvexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
     elseif directions == (0,0,0,1)
 
     else
+        #TODO: what to do with the test ?
+        gI_ratio  =  gI₀' ./ gI
+        bI_ratio  =  bI₀' ./ bI
+        gO_ratio  =  gO ./ gO₀'
+        bO_ratio  =  bO ./ bO₀'
+
+        if retToScale == "constant"
+            normalFrontierDistances   = [minimum(gI_ratio[z,:]) * minimum(hcat(gO_ratio,bO_ratio)[z,:]) for z in 1:nDMUs]
+            bFrontierDistances        = [minimum(gI_ratio[z,:]) * minimum(gO_ratio[z,:]) * (minimum(gO_ratio[z,:]) >= minimum(bO_ratio[z,:])) for z in 1:nDMUs]
+        else
+            normalFrontierDistances   = [minimum(gI_ratio[z,:]) * minimum(hcat(gO_ratio,bO_ratio)[z,:] * ( minimum(gI_ratio[z,:]) >= (1.0 - eps()) ) ) for z in 1:nDMUs]
+            bFrontierDistances        = [minimum(gI_ratio[z,:]) * minimum(gO_ratio[z,:]) * (minimum(gO_ratio[z,:]) >= minimum(bO_ratio[z,:]) &&  minimum(gI_ratio[z,:]) >= (1.0 - eps())    ) for z in 1:nDMUs]
+        end
+        return min(maximum(normalFrontierDistances),maximum(bFrontierDistances))
         @error "Directions not supported"
-    end 
+    end
 
 
 

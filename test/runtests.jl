@@ -23,12 +23,12 @@ bO = Array{Float64}(undef, (nDMUs,nBO,nPer)) # Bad outputs, aka "undesiderable" 
 
 for (p,period) in enumerate(periods)
     periodData = airportData[airportData.period .== period,:]
-    gI[:,:,p] = convert(Matrix{Float64},periodData[:,airportGoodInputs])
+    gI[:,:,p] = Matrix{Float64}(periodData[:,airportGoodInputs])
     if nBI > 0
-         bI[:,:,p] = convert(Matrix{Float64},periodData[:,airportBadInputs])
+         bI[:,:,p] = Matrix{Float64}(periodData[:,airportBadInputs])
     end
-    gO[:,:,p] = convert(Matrix{Float64},periodData[:,airportGoodOutputs])
-    bO[:,:,p] = convert(Matrix{Float64},periodData[:,airportBadOutputs])
+    gO[:,:,p] = Matrix{Float64}(periodData[:,airportGoodOutputs])
+    bO[:,:,p] = Matrix{Float64}(periodData[:,airportBadOutputs])
 end
 
 # Call the function to get the efficiency measurements for constant returns to scale
@@ -40,8 +40,13 @@ gI,gO,bO,bI,retToScale="constant", dirGI=0,dirBI=0,dirGO=1,dirBO=-1, prodStructu
 gI,gO,bO,bI,retToScale="variable", dirGI=0,dirBI=0,dirGO=1,dirBO=-1, prodStructure="additive")
 @test nonConvTest_value_vrs[3,3]  ≈ 7.432043216538459
 
+
+
+
+
+
 # Aitport data test with bad inputs separated...
-airportData = CSV.read(joinpath(@__DIR__,"data","airports.csv"),DataFrame; delim=';',copycols=true)
+airportData = CSV.read(joinpath(dirname(pathof(BDisposal)),"..","test","data","airports.csv"),DataFrame; delim=';',copycols=true)
 airportGoodInputs  = ["employees"]
 airportBadInputs   = ["totalCosts"]
 airportGoodOutputs = ["passengers"]
@@ -59,12 +64,12 @@ bO = Array{Float64}(undef, (nDMUs,nBO,nPer))
 
 for (p,period) in enumerate(periods)
     periodData = airportData[airportData.period .== period,:]
-    gI[:,:,p] = convert(Matrix{Float64},periodData[:,airportGoodInputs])
+    gI[:,:,p] = Matrix{Float64}(periodData[:,airportGoodInputs])
     if nBI > 0
-        bI[:,:,p] = convert(Matrix{Float64},periodData[:,airportBadInputs])
+        bI[:,:,p] = Matrix{Float64}(periodData[:,airportBadInputs])
     end
-    gO[:,:,p] = convert(Matrix{Float64},periodData[:,airportGoodOutputs])
-    bO[:,:,p] = convert(Matrix{Float64},periodData[:,airportBadOutputs])
+    gO[:,:,p] = Matrix{Float64}(periodData[:,airportGoodOutputs])
+    bO[:,:,p] = Matrix{Float64}(periodData[:,airportBadOutputs])
 end
 
 airportAnalysis  = prodIndex(gI,gO,bO,bI;
@@ -96,6 +101,29 @@ airportAnalysisVRTS_a = prodIndex(gI,gO,bO,bI;
 @test  airportAnalysisVRTS_a.prodIndexes ≈ airportAnalysisVRTS_a.prodIndexes_T_G_O .+ airportAnalysisVRTS_a.prodIndexes_T_B_O .+ airportAnalysisVRTS_a.prodIndexes_E_G_O .+ airportAnalysisVRTS_a.prodIndexes_E_B_O .+ airportAnalysisVRTS_a.prodIndexes_S_G_O .+ airportAnalysisVRTS_a.prodIndexes_S_B_O
 @test  airportAnalysisVRTS_a.prodIndexes ≈ airportAnalysisVRTS_a.prodIndexes_T_G_I .+ airportAnalysisVRTS_a.prodIndexes_T_B_I .+ airportAnalysisVRTS_a.prodIndexes_E_G_I .+ airportAnalysisVRTS_a.prodIndexes_E_B_I .+ airportAnalysisVRTS_a.prodIndexes_S_G_I .+ airportAnalysisVRTS_a.prodIndexes_S_B_I
 @test  airportAnalysisVRTS_a.prodIndexes ≈ airportAnalysisVRTS_a.prodIndexes_T .+ airportAnalysisVRTS_a.prodIndexes_E .+ airportAnalysisVRTS_a.prodIndexes_S
+
+# Testing on the individual dmu problem for nonConvex case
+
+gIₜ = hcat(gI[:,:,1],gI[:,:,2],gI[:,:,3])
+bIₜ = hcat(bI[:,:,1],bI[:,:,2],bI[:,:,3])
+gOₜ = hcat(gO[:,:,1],gO[:,:,2])
+bOₜ = hcat(bO[:,:,1],bO[:,:,2],bO[:,:,3],bO[:,:,4])
+
+gI₀ = gIₜ[1,:]
+bI₀ = bIₜ[1,:]
+gO₀ = gOₜ[1,:]
+bO₀ = bOₜ[1,:]
+
+
+score = problem(gI₀,bI₀,gO₀,bO₀,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",
+        prodStructure="multiplicative",convexAssumption=false,directions=(1,0,0,0),
+        startValues=(0,0,1.1))
+
+
+
+
+
+
 
 # Basic testing of dmuEfficiency
 I  = [10 2; 8 4; 12 1.5; 24 3]
