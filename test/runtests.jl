@@ -293,11 +293,9 @@ out = [dmuEfficiency(X[:,d],Y[:,d],X',Y') for  d in 1:nDMU]
 @test out[1].obj ≈ 0.8571428571428571
 @test out[1].wI ≈ [0.14285714285714285, 0.14285714285714285]
 @test out[1].wO ≈ [0.8571428571428571]
-@test collect(keys(out[1].refSet)) ≈ [5,4]
-@test collect(values(out[1].refSet)) ≈ [0.2857142857142857,0.7142857142857143]
+@test collect(keys(out[1].refSet)) ≈ [5,4] || collect(keys(out[1].refSet)) ≈ [4,5]
+@test collect(values(out[1].refSet)) ≈ [0.2857142857142857,0.7142857142857143] ||  collect(values(out[1].refSet)) ≈ [0.7142857142857143,0.2857142857142857]
 @test [i[:eff] for i in out] == [false,false,true,true,true,false]
 
 outDual = [dmuEfficiencyDual(X[:,d],Y[:,d],X',Y') for  d in 1:nDMU]
 @test [i[:eff] for i in outDual] == [false,false,true,true,true,false]
-
-a = outDual[1]

@@ -88,15 +88,20 @@ function convexProblem(inp₀,bInp₀,gO₀,bO₀,inp,bInp,gO,bO;
                # Printing the model (for debugging)
                #print(effmodel) # The model in mathematical terms is printed
 
+               println("aa")
+               println("bb")
                # Solving the model
                oldstd = stdout
                #redirect_stdout(open("/dev/null", "w"))
                redirect_stdout(open("nul", "w"))
+               println("cc")
                #open("nul", "w")
                JuMP.optimize!(effmodel)
                #redirect_stdout((()->optimize!(effmodel)),open("/dev/null", "w"))
+               println("dd")
                redirect_stdout(oldstd) # recover original stdout
                # Copy the results to the output matrix...
+               println("ee")
                status = termination_status(effmodel)
 
                #if (status == MOI.OPTIMAL || status == MOI.LOCALLY_SOLVED || status == MOI.TIME_LIMIT) && has_values(effmodel)
