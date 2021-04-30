@@ -92,6 +92,28 @@ airportAnalysisVRTS  = prodIndex(gI,gO,bO,bI;
 @test airportAnalysisVRTS.prodIndexes[3,2] ≈ airportAnalysis.prodIndexes[3,2]
 @test airportAnalysisVRTS.prodIndexes[5,1] == 0.896377214928534
 
+airportAnalysisVRTS_m_nc  = prodIndex(gI,gO,bO,bI;
+                   retToScale="variable",prodStructure="multiplicative",convexAssumption=true)
+
+airportAnalysisVRTS_m_nc.prodIndexes
+
+
+
+
+
+
+
+
+
+
+
+
+
+airportAnalysisVRTS_a_nc  = prodIndex(gI,gO,bO,bI;
+                   retToScale="variable",prodStructure="addittive",convexAssumption=true)
+airportAnalysisVRTS_a_nc.prodIndexes
+
+
 airportAnalysisVRTS_a = prodIndex(gI,gO,bO,bI;
                   retToScale="variable",prodStructure="additive",convexAssumption=true)
 
@@ -109,10 +131,11 @@ bIₜ = hcat(bI[:,:,1],bI[:,:,2],bI[:,:,3])
 gOₜ = hcat(gO[:,:,1],gO[:,:,2])
 bOₜ = hcat(bO[:,:,1],bO[:,:,2],bO[:,:,3],bO[:,:,4])
 
-gI₀ = gIₜ[1,:]
-bI₀ = bIₜ[1,:]
-gO₀ = gOₜ[1,:]
-bO₀ = bOₜ[1,:]
+z = 7
+gI₀ = gIₜ[7,:]
+bI₀ = bIₜ[7,:]
+gO₀ = gOₜ[7,:]
+bO₀ = bOₜ[7,:]
 
 
 score = problem(gI₀,bI₀,gO₀,bO₀,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",
@@ -120,8 +143,56 @@ score = problem(gI₀,bI₀,gO₀,bO₀,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="vari
         startValues=(0,0,1.1))
 
 
+z = 7
+t =1
+gIₜ = gI[:,:,t]
+bIₜ = bI[:,:,t]
+gOₜ = gO[:,:,t]
+bOₜ = bO[:,:,t]
+gI₀ = gIₜ[z,:,1]
+bI₀ = bIₜ[z,:,1]
+gO₀ = gOₜ[z,:,1]
+bO₀ = bOₜ[z,:,1]
+
+score1m = problem(gI₀,bI₀,gO₀,bO₀,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",
+        prodStructure="multiplicative",convexAssumption=false,directions=(0,0,1,0))
+score1a = problem(gI₀,bI₀,gO₀,bO₀,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",
+        prodStructure="addittive",convexAssumption=false,directions=(0,0,1,0))
+t =2
+gIₜ = gI[:,:,t]
+bIₜ = bI[:,:,t]
+gOₜ = gO[:,:,t]
+bOₜ = bO[:,:,t]
+gI₀ = gIₜ[z,:,1]
+bI₀ = bIₜ[z,:,1]
+gO₀ = gOₜ[z,:,1]
+bO₀ = bOₜ[z,:,1]
+score1m = problem(gI₀,bI₀,gO₀,bO₀,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",
+        prodStructure="multiplicative",convexAssumption=false,directions=(0,0,-1,0))
 
 
+gO_ratio  =  gO₀' ./ gOₜ  # nDMU x ngI
+# Normal dist function
+gIConstraint = all(gI₀'  .>=   gIₜ, dims=2)
+bIConstraint = all(bI₀'  .>=   bIₜ, dims=2)
+bOConstraint = all(bO₀'  .<=   bOₜ, dims=2)
+globalContraint = dropdims(all(hcat(gIConstraint,bIConstraint,bOConstraint), dims=2), dims=2)
+effScore_normal = maximum(gO_ratio[globalContraint,:])
+# Bdisposal Distance function
+gIConstraint = all(gI₀'  .>=   gIₜ, dims=2)
+bIConstraint = all(bI₀'  .<=   bIₜ, dims=2)
+bOConstraint = all(bO₀'  .>=   bOₜ, dims=2)
+globalContraint = dropdims(all(hcat(gIConstraint,bIConstraint,bOConstraint), dims=2), dims=2)
+effScore_bfrontier = maximum(gO_ratio[globalContraint,:])
+effscore = min(effScore_normal,effScore_bfrontier)
+return effscore
+
+
+
+
+
+score1a = problem(gI₀,bI₀,gO₀,bO₀,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",
+        prodStructure="addittive",convexAssumption=false,directions=(0,0,1,0))
 
 
 

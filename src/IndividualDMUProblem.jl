@@ -93,7 +93,7 @@ function convexProblem(inp₀,bInp₀,gO₀,bO₀,inp,bInp,gO,bO;
                # Solving the model
                JuMP.optimize!(effmodel)
                redirect_stdout(oldstd) # recover original stdout
-               
+
                # Copy the results to the output matrix...
                status = termination_status(effmodel)
 
@@ -119,16 +119,20 @@ function convexProblem(inp₀,bInp₀,gO₀,bO₀,inp,bInp,gO,bO;
 
                if dirGO == 1
                    if !crossTime # we  keep the original λ
-                      @variable(effmodel, 1 <= λ <= Inf)
+                  @variable(effmodel, 1 <= λ <= Inf)
                    else
                       @variable(effmodel, 0 <= λ <= Inf)
                    end
+                   # @variable(effmodel, λ)
+
+
                else
                    if !crossTime # we use as variable its reverse 1/λ
                       @variable(effmodel, 0 <= invλ <= 1)
                    else
                       @variable(effmodel, 0 <= invλ <= Inf)
                    end
+                   # @variable(effmodel, invλ)
                end
 
                if directions == (-1,0,0,0)
@@ -326,6 +330,11 @@ function nonConvexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
     nGI, nGO, nBO, nDMUs, nBI = length(gI₀), length(gO₀), length(bO₀), size(gI,1), length(bI₀)
     (dirGI,dirBI,dirGO,dirBO) = directions
 
+
+
+
+
+
     if directions == (1,0,0,0)
         if prodStructure == "multiplicative"
             if retToScale != "constant"
@@ -370,11 +379,154 @@ function nonConvexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
 
             end
         end
-    elseif directions == (0,1,0,0) # directions (1,0,0,0)
+    elseif directions == (0,1,0,0)
+        if prodStructure == "multiplicative"
+            if retToScale != "constant"
+                bI_ratio  =  bI ./ bI₀' # nDMU x ngI
+                # Normal dist function
+                gIConstraint = all(gI₀'  .>=   gI, dims=2)
+                gOConstraint = all(gO₀'  .<=   gO, dims=2)
+                bOConstraint = all(bO₀'  .<=   bO, dims=2)
+                globalContraint = dropdims(all(hcat(gIConstraint,gOConstraint,bOConstraint), dims=2), dims=2)
+                effScore_normal = maximum(bI_ratio[globalContraint,:])
+                # Bdisposal Distance function
+                gIConstraint = all(gI₀'  .>=   gI, dims=2)
+                gOConstraint = all(gO₀'  .<=   gO, dims=2)
+                bOConstraint = all(bO₀'  .>=   bO, dims=2)
+                globalContraint = dropdims(all(hcat(gIConstraint,gOConstraint,bOConstraint), dims=2), dims=2)
+                effScore_bfrontier = minimum(bI_ratio[globalContraint,:])
+                effscore = max(effScore_normal,effScore_bfrontier)
+                return effscore
+            else # constant RTS
 
+
+            end
+        else # addittive prod structure
+            if retToScale != "constant"
+                bI_ratio  =  1 .- (bI ./ bI₀') # nDMU x ngI
+                # Normal dist function
+                gIConstraint = all(gI₀'  .>=   gI, dims=2)
+                gOConstraint = all(gO₀'  .<=   gO, dims=2)
+                bOConstraint = all(bO₀'  .<=   bO, dims=2)
+                globalContraint = dropdims(all(hcat(gIConstraint,gOConstraint,bOConstraint), dims=2), dims=2)
+                effScore_normal = maximum(bI_ratio[globalContraint,:])
+                # Bdisposal Distance function
+                gIConstraint = all(gI₀'  .>=   gI, dims=2)
+                gOConstraint = all(gO₀'  .<=   gO, dims=2)
+                bOConstraint = all(bO₀'  .>=   bO, dims=2)
+                globalContraint = dropdims(all(hcat(gIConstraint,gOConstraint,bOConstraint), dims=2), dims=2)
+                effScore_bfrontier = maximum(bI_ratio[globalContraint,:])
+                effscore = min(effScore_normal,effScore_bfrontier)
+                return effscore
+            else # constant RTS
+
+
+            end
+        end
     elseif directions == (0,0,-1,0)
+        if prodStructure == "multiplicative"
+            if retToScale != "constant"
+                gO_ratio  =  gO₀' ./ gO  # nDMU x ngI
+                # Normal dist function
+                gIConstraint = all(gI₀'  .>=   gI, dims=2)
+                bIConstraint = all(bI₀'  .>=   bI, dims=2)
+                bOConstraint = all(bO₀'  .<=   bO, dims=2)
+                globalContraint = dropdims(all(hcat(gIConstraint,bIConstraint,bOConstraint), dims=2), dims=2)
+                effScore_normal = maximum(gO_ratio[globalContraint,:])
+                # Bdisposal Distance function
+                gIConstraint = all(gI₀'  .>=   gI, dims=2)
+                bIConstraint = all(bI₀'  .<=   bI, dims=2)
+                bOConstraint = all(bO₀'  .>=   bO, dims=2)
+                globalContraint = dropdims(all(hcat(gIConstraint,bIConstraint,bOConstraint), dims=2), dims=2)
+                effScore_bfrontier = maximum(gO_ratio[globalContraint,:])
+                effscore = min(effScore_normal,effScore_bfrontier)
+                return effscore
+            else # constant RTS
 
+
+            end
+        else # addittive prod structure
+            @error "Direction not supported for the addittive case"
+
+        end
+    elseif directions == (0,0,1,0)
+        if prodStructure == "multiplicative"
+            @error "Direction not supported for the multiplicative case"
+        else # addittive prod structure
+            if retToScale != "constant"
+                gO_ratio  =  (gO₀' ./ gO ) .- 1 # nDMU x ngI
+                # Normal dist function
+                gIConstraint = all(gI₀'  .>=   gI, dims=2)
+                bIConstraint = all(bI₀'  .>=   bI, dims=2)
+                bOConstraint = all(bO₀'  .<=   bO, dims=2)
+                globalContraint = dropdims(all(hcat(gIConstraint,bIConstraint,bOConstraint), dims=2), dims=2)
+                effScore_normal = maximum(gO_ratio[globalContraint,:])
+                # Bdisposal Distance function
+                gIConstraint = all(gI₀'  .>=   gI, dims=2)
+                bIConstraint = all(bI₀'  .<=   bI, dims=2)
+                bOConstraint = all(bO₀'  .>=   bO, dims=2)
+                globalContraint = dropdims(all(hcat(gIConstraint,bIConstraint,bOConstraint), dims=2), dims=2)
+                effScore_bfrontier = maximum(gO_ratio[globalContraint,:])
+                effscore = max(effScore_normal,effScore_bfrontier)
+                return effscore
+            else # constant RTS
+
+            end
+        end
     elseif directions == (0,0,0,1)
+
+        if prodStructure == "multiplicative"
+            if retToScale != "constant"
+                bO_ratio  =  bO ./ bO₀' # nDMU x ngI
+                # Normal dist function
+                gIConstraint = all(gI₀'  .>=   gI, dims=2)
+                bIConstraint = all(bI₀'  .>=   bI, dims=2)
+                gOConstraint = all(gO₀'  .<=   gO, dims=2)
+                globalContraint = dropdims(all(hcat(gIConstraint,bIConstraint,gOConstraint), dims=2), dims=2)
+                effScore_normal = maximum(bO_ratio[globalContraint,:])
+                # Bdisposal Distance function
+                gIConstraint = all(gI₀'  .>=   gI, dims=2)
+                bIConstraint = all(bI₀'  .<=   bI, dims=2)
+                gOConstraint = all(gO₀'  .<=   gO, dims=2)
+                globalContraint = dropdims(all(hcat(gIConstraint,bIConstraint,gOConstraint), dims=2), dims=2)
+                effScore_bfrontier = maximum(bO_ratio[globalContraint,:])
+                effscore = max(effScore_normal,effScore_bfrontier)
+                return effscore
+            else # constant RTS
+
+
+            end
+        else # addittive prod structure
+            @error "Addittive structure not supported for these directions"
+        end
+
+    elseif directions == (0,0,0,-1)
+
+        if prodStructure == "multiplicative"
+            @error "Multiplicative directions not supported for these direcitons"
+        else # addittive prod structure
+            if retToScale != "constant"
+                bO_ratio  =  1 .- (bO ./ bO₀') # nDMU x ngI
+                # Normal dist function
+                gIConstraint = all(gI₀'  .>=   gI, dims=2)
+                bIConstraint = all(bI₀'  .>=   bI, dims=2)
+                gOConstraint = all(gO₀'  .<=   gO, dims=2)
+                globalContraint = dropdims(all(hcat(gIConstraint,bIConstraint,gOConstraint), dims=2), dims=2)
+                effScore_normal = maximum(bO_ratio[globalContraint,:])
+                # Bdisposal Distance function
+                gIConstraint = all(gI₀'  .>=   gI, dims=2)
+                bIConstraint = all(bI₀'  .<=   bI, dims=2)
+                gOConstraint = all(gO₀'  .<=   gO, dims=2)
+                globalContraint = dropdims(all(hcat(gIConstraint,bIConstraint,gOConstraint), dims=2), dims=2)
+                effScore_bfrontier = minimum(bO_ratio[globalContraint,:])
+                effscore = min(effScore_normal,effScore_bfrontier)
+                return effscore
+            else # constant RTS
+
+
+            end
+        end
+
 
     else
         #TODO: what to do with the test ?

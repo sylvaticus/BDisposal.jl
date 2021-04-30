@@ -137,10 +137,17 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
         gOᵤ = gO[:,:,t+1]
         bOₜ = bO[:,:,t]
         bOᵤ = bO[:,:,t+1]
-        dirGI = prodStructure == "multiplicative" ? (-1,0,0,0) : (1,0,0,0)
-        dirBI = prodStructure == "multiplicative" ? (0,-1,0,0) : (0,1,0,0)
-        dirGO = prodStructure == "multiplicative" ? (0,0,1,0)  : (0,0,1,0)
-        dirBO = prodStructure == "multiplicative" ? (0,0,0,-1) : (0,0,0,-1)
+        if convexAssumption == true
+            dirGI = prodStructure == "multiplicative" ? (-1,0,0,0) : (1,0,0,0)
+            dirBI = prodStructure == "multiplicative" ? (0,-1,0,0) : (0,1,0,0)
+            dirGO = prodStructure == "multiplicative" ? (0,0,1,0)  : (0,0,1,0)
+            dirBO = prodStructure == "multiplicative" ? (0,0,0,-1) : (0,0,0,-1)
+        else
+            dirGI = prodStructure == "multiplicative" ? (1,0,0,0)  : (1,0,0,0)
+            dirBI = prodStructure == "multiplicative" ? (0,1,0,0)  : (0,1,0,0)
+            dirGO = prodStructure == "multiplicative" ? (0,0,-1,0) : (0,0,1,0)
+            dirBO = prodStructure == "multiplicative" ? (0,0,0,1)  : (0,0,0,-1)
+        end
         for z in 1:nDMUs
             gIₜ₀ = gIₜ[z,:]
             bIₜ₀ = bIₜ[z,:]
