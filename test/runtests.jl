@@ -117,6 +117,9 @@ airportAnalysisVRTS_a_nc.prodIndexes
 airportAnalysisVRTS_a = prodIndex(gI,gO,bO,bI;
                   retToScale="variable",prodStructure="additive",convexAssumption=true)
 
+
+
+
 @test airportAnalysisVRTS_a.prodIndexes[3,2] ≈ -0.09534201521261434
 @test airportAnalysisVRTS_a.prodIndexes ≈ airportAnalysisVRTS_a.prodIndexes_G .+ airportAnalysisVRTS_a.prodIndexes_B
 

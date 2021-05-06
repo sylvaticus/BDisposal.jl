@@ -109,6 +109,7 @@ function convexProblem(inp₀,bInp₀,gO₀,bO₀,inp,bInp,gO,bO;
                #effmodel = Model(() -> AmplNLWriter.Optimizer(path, ["print_level=0"]))
                #effmodel = Model(optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0))
                effmodel = Model(optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF)) # we choose GLPK with a verbose output
+                #effmodel = Model(optimizer_with_attributes(GLPK.Optimizer))
                #effmodel = Model(optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF))
 
                # Defining variables
@@ -286,11 +287,11 @@ function convexProblem(inp₀,bInp₀,gO₀,bO₀,inp,bInp,gO,bO;
            cgO1[j in 1:nGO],   # first constraint on good outputs
               gO₀[j] + λ * dirGO * gO₀[j] <= sum(θ[z]*gO[z,j] for z in 1:nDMUs)
            cbO1[j in 1:nBO],   # first constraint on bad outputs
-              bO₀[j] + λ * dirBO * bO₀[j] >= sum(θ[z]*bO[z,j] for z in 1:nDMUs)
+              bO₀[j] - λ * dirBO * bO₀[j] >= sum(θ[z]*bO[z,j] for z in 1:nDMUs)
            cgO2[j in 1:nGO],   # second constraint on good outputs
               gO₀[j] + λ*dirGO * gO₀[j] <= sum(μ[z]*gO[z,j] for z in 1:nDMUs)
            cbO2[j in 1:nBO],   # second constraint on bad outputs
-              bO₀[j] + λ*dirBO * bO₀[j] <= sum(μ[z]*bO[z,j] for z in 1:nDMUs)
+              bO₀[j] - λ*dirBO * bO₀[j] <= sum(μ[z]*bO[z,j] for z in 1:nDMUs)
        end
        if retToScale == "variable"
            @constraints effmodel begin
