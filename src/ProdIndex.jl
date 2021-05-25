@@ -129,6 +129,7 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
     noBadIndexDefault = prodStructure == "multiplicative" ? 1.0 : 0.0
 
     for t in 1:nPer-1
+        #println(t)
         gIₜ = gI[:,:,t]
         gIᵤ = gI[:,:,t+1]
         bIₜ = bI[:,:,t]
@@ -158,9 +159,9 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
             gOᵤ₀ = gOᵤ[z,:]
             bOᵤ₀ = bOᵤ[z,:]
 
-           if z == 1 && t == nPer-1
-               println("here we stop and check")
-           end
+           #if z == 1 && t == nPer-1
+            #   println("here we stop and check")
+           #end
 
 
 
@@ -237,23 +238,23 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
             # Computing aggregated for the full (gI,Bi,bO,gO) partition...
             if prodStructure == "multiplicative"
                 idx_i_t = (idx_gi_t̃/idx_gi_t) * (idx_bi_t̃/idx_bi_t)
-                idx_o_t = (idx_go_t/idx_go_t̃) * (idx_bo_t̃/idx_bo_t)
+                idx_o_t = (idx_go_t/idx_go_t̃) * (idx_bo_t/idx_bo_t̃)
                 idx_t   = idx_o_t/idx_i_t
                 idx_i_u = (idx_gi_u/idx_gi_ũ) * (idx_bi_u/idx_bi_ũ)
-                idx_o_u = (idx_go_ũ/idx_go_u) * (idx_bo_u/idx_bo_ũ)
+                idx_o_u = (idx_go_ũ/idx_go_u) * (idx_bo_ũ/idx_bo_u)
                 idx_u   = idx_o_u/idx_i_u
                 idx     = (idx_t * idx_u)^(1/2)
             else
-                if (z ==1 && t == nPer-1)
-                 println((idx_gi_t, idx_bi_t, idx_go_t, idx_bo_t))
-                end
+                #if (z ==1 && t == nPer-1)
+                # println((idx_gi_t, idx_bi_t, idx_go_t, idx_bo_t))
+                #end
 
 
                 idx_i_t = (idx_gi_t̃ - idx_gi_t) + (idx_bi_t̃ - idx_bi_t)
-                idx_o_t = (idx_go_t - idx_go_t̃) + (idx_bo_t̃ - idx_bo_t)
+                idx_o_t = (idx_go_t - idx_go_t̃) - (idx_bo_t̃ - idx_bo_t)
                 idx_t   = idx_o_t - idx_i_t
                 idx_i_u = (idx_gi_u - idx_gi_ũ) + (idx_bi_u - idx_bi_ũ)
-                idx_o_u = (idx_go_ũ - idx_go_u) + (idx_bo_u - idx_bo_ũ)
+                idx_o_u = (idx_go_ũ - idx_go_u) - (idx_bo_u - idx_bo_ũ)
                 idx_u   = idx_o_u - idx_i_u
                 idx     = (idx_t + idx_u) / 2
             end
@@ -262,12 +263,12 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
             # Computing aggregated for the good inputs/outputs only...
             if prodStructure == "multiplicative"
                idx_Gi_t = (idx_gi_t̃/idx_gi_t)
-               idx_Go_t = (idx_go_t̃/idx_go_t)
+               idx_Go_t = (idx_go_t/idx_go_t̃)
                idx_Gt   = idx_Go_t/idx_Gi_t
                idx_Gi_u = (idx_gi_u/idx_gi_ũ)
-               idx_Go_u = (idx_go_u/idx_go_ũ)
+               idx_Go_u = (idx_go_ũ/idx_go_u)
                idx_Gu   = idx_Go_u/idx_Gi_u
-               idx_G     = (idx_Gt * idx_Gu)^(1/2)
+               idx_G    = (idx_Gt * idx_Gu)^(1/2)
             else
                 idx_Gi_t = (idx_gi_t̃ - idx_gi_t)
                 idx_Go_t = (idx_go_t - idx_go_t̃)
@@ -283,18 +284,18 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
             if prodStructure == "multiplicative"
                idx_Bi_t = (idx_bi_t̃/idx_bi_t)
                idx_Bo_t = (idx_bo_t̃/idx_bo_t)
-               idx_Bt   = idx_Bo_t/idx_Bi_t
+               idx_Bt   = 1/(idx_Bo_t * idx_Bi_t)
                idx_Bi_u = (idx_bi_u/idx_bi_ũ)
                idx_Bo_u = (idx_bo_u/idx_bo_ũ)
-               idx_Bu   = idx_Bo_u/idx_Bi_u
+               idx_Bu   = 1/(idx_Bo_u*idx_Bi_u)
                idx_B    = (idx_Bt * idx_Bu)^(1/2)
             else
                 idx_Bi_t = (idx_bi_t̃ - idx_bi_t)
                 idx_Bo_t = (idx_bo_t - idx_bo_t̃)
-                idx_Bt   = idx_Bo_t - idx_Bi_t
+                idx_Bt   = - idx_Bo_t - idx_Bi_t
                 idx_Bi_u = (idx_bi_u - idx_bi_ũ)
                 idx_Bo_u = (idx_bo_ũ - idx_bo_u)
-                idx_Bu   = idx_Bo_u - idx_Bi_u
+                idx_Bu   = - idx_Bo_u - idx_Bi_u
                 idx_B    = (idx_Bt + idx_Bu) / 2
             end
             prodIndexes_B[z,t] = idx_B

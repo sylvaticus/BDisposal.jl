@@ -345,13 +345,13 @@ function nonConvexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
                 gOConstraint = all(gO₀'  .<=   gO, dims=2)
                 bOConstraint = all(bO₀'  .<=   bO, dims=2)
                 globalContraint = dropdims(all(hcat(bIConstraint,gOConstraint,bOConstraint), dims=2), dims=2)
-                effScore_normal = maximum(gI_ratio[globalContraint,:])
+                effScore_normal = minimum(maximum(gI_ratio[globalContraint,:],dims=2)
                 # Bdisposal Distance function
                 bIConstraint = all(bI₀'  .>=   bI, dims=2)
                 gOConstraint = all(gO₀'  .<=   gO, dims=2)
                 bOConstraint = all(bO₀'  .>=   bO, dims=2)
                 globalContraint = dropdims(all(hcat(bIConstraint,gOConstraint,bOConstraint), dims=2), dims=2)
-                effScore_bfrontier = maximum(gI_ratio[globalContraint,:])
+                effScore_bfrontier = minimum(maximum(gI_ratio[globalContraint,:],dims=2)
                 effscore = max(effScore_normal,effScore_bfrontier)
                 return effscore
             else # constant RTS
@@ -366,13 +366,13 @@ function nonConvexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
                 gOConstraint = all(gO₀'  .<=   gO, dims=2)
                 bOConstraint = all(bO₀'  .<=   bO, dims=2)
                 globalContraint = dropdims(all(hcat(bIConstraint,gOConstraint,bOConstraint), dims=2), dims=2)
-                effScore_normal = maximum(gI_ratio[globalContraint,:])
+                effScore_normal = maximum(maximum(gI_ratio[globalContraint,:],dims=2)
                 # Bdisposal Distance function
                 bIConstraint = all(bI₀'  .>=   bI, dims=2)
                 gOConstraint = all(gO₀'  .<=   gO, dims=2)
                 bOConstraint = all(bO₀'  .>=   bO, dims=2)
                 globalContraint = dropdims(all(hcat(bIConstraint,gOConstraint,bOConstraint), dims=2), dims=2)
-                effScore_bfrontier = maximum(gI_ratio[globalContraint,:])
+                effScore_bfrontier = maximum(maximum(gI_ratio[globalContraint,:],dims=2)
                 effscore = min(effScore_normal,effScore_bfrontier)
                 return effscore
             else # constant RTS
@@ -389,13 +389,13 @@ function nonConvexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
                 gOConstraint = all(gO₀'  .<=   gO, dims=2)
                 bOConstraint = all(bO₀'  .<=   bO, dims=2)
                 globalContraint = dropdims(all(hcat(gIConstraint,gOConstraint,bOConstraint), dims=2), dims=2)
-                effScore_normal = maximum(bI_ratio[globalContraint,:])
+                effScore_normal = minimum(maximum(bI_ratio[globalContraint,:],dims=2))
                 # Bdisposal Distance function
                 gIConstraint = all(gI₀'  .>=   gI, dims=2)
                 gOConstraint = all(gO₀'  .<=   gO, dims=2)
                 bOConstraint = all(bO₀'  .>=   bO, dims=2)
                 globalContraint = dropdims(all(hcat(gIConstraint,gOConstraint,bOConstraint), dims=2), dims=2)
-                effScore_bfrontier = minimum(bI_ratio[globalContraint,:])
+                effScore_bfrontier = minimum(maximum(bI_ratio[globalContraint,:],dims=2))
                 effscore = max(effScore_normal,effScore_bfrontier)
                 return effscore
             else # constant RTS
@@ -410,13 +410,13 @@ function nonConvexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
                 gOConstraint = all(gO₀'  .<=   gO, dims=2)
                 bOConstraint = all(bO₀'  .<=   bO, dims=2)
                 globalContraint = dropdims(all(hcat(gIConstraint,gOConstraint,bOConstraint), dims=2), dims=2)
-                effScore_normal = maximum(bI_ratio[globalContraint,:])
+                effScore_normal = maximum(minimum(bI_ratio[globalContraint,:],dims=2))
                 # Bdisposal Distance function
                 gIConstraint = all(gI₀'  .>=   gI, dims=2)
                 gOConstraint = all(gO₀'  .<=   gO, dims=2)
                 bOConstraint = all(bO₀'  .>=   bO, dims=2)
                 globalContraint = dropdims(all(hcat(gIConstraint,gOConstraint,bOConstraint), dims=2), dims=2)
-                effScore_bfrontier = maximum(bI_ratio[globalContraint,:])
+                effScore_bfrontier = maximum(minimum(bI_ratio[globalContraint,:],dims=2))
                 effscore = min(effScore_normal,effScore_bfrontier)
                 return effscore
             else # constant RTS
@@ -433,14 +433,14 @@ function nonConvexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
                 bIConstraint = all(bI₀'  .>=   bI, dims=2)
                 bOConstraint = all(bO₀'  .<=   bO, dims=2)
                 globalContraint = dropdims(all(hcat(gIConstraint,bIConstraint,bOConstraint), dims=2), dims=2)
-                effScore_normal = maximum(gO_ratio[globalContraint,:])
+                effScore_normal = minimum(maximum(gO_ratio[globalContraint,:],dims=2)
                 # Bdisposal Distance function
                 gIConstraint = all(gI₀'  .>=   gI, dims=2)
                 bIConstraint = all(bI₀'  .<=   bI, dims=2)
                 bOConstraint = all(bO₀'  .>=   bO, dims=2)
                 globalContraint = dropdims(all(hcat(gIConstraint,bIConstraint,bOConstraint), dims=2), dims=2)
-                effScore_bfrontier = maximum(gO_ratio[globalContraint,:])
-                effscore = min(effScore_normal,effScore_bfrontier)
+                effScore_bfrontier = minimum(maximum(gO_ratio[globalContraint,:],dims=2))
+                effscore = max(effScore_normal,effScore_bfrontier)
                 return effscore
             else # constant RTS
 
@@ -461,14 +461,14 @@ function nonConvexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
                 bIConstraint = all(bI₀'  .>=   bI, dims=2)
                 bOConstraint = all(bO₀'  .<=   bO, dims=2)
                 globalContraint = dropdims(all(hcat(gIConstraint,bIConstraint,bOConstraint), dims=2), dims=2)
-                effScore_normal = maximum(gO_ratio[globalContraint,:])
+                effScore_normal = maximum(minimum(gO_ratio[globalContraint,:],dims=2)) #todo check this
                 # Bdisposal Distance function
                 gIConstraint = all(gI₀'  .>=   gI, dims=2)
                 bIConstraint = all(bI₀'  .<=   bI, dims=2)
                 bOConstraint = all(bO₀'  .>=   bO, dims=2)
                 globalContraint = dropdims(all(hcat(gIConstraint,bIConstraint,bOConstraint), dims=2), dims=2)
-                effScore_bfrontier = maximum(gO_ratio[globalContraint,:])
-                effscore = max(effScore_normal,effScore_bfrontier)
+                effScore_bfrontier = maximum(minimum(gO_ratio[globalContraint,:],dims=2)) # todo check this
+                effscore = min(effScore_normal,effScore_bfrontier)
                 return effscore
             else # constant RTS
 
@@ -484,13 +484,13 @@ function nonConvexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
                 bIConstraint = all(bI₀'  .>=   bI, dims=2)
                 gOConstraint = all(gO₀'  .<=   gO, dims=2)
                 globalContraint = dropdims(all(hcat(gIConstraint,bIConstraint,gOConstraint), dims=2), dims=2)
-                effScore_normal = maximum(bO_ratio[globalContraint,:])
+                effScore_normal = minimum(minimum(bO_ratio[globalContraint,:],dims=2))
                 # Bdisposal Distance function
                 gIConstraint = all(gI₀'  .>=   gI, dims=2)
                 bIConstraint = all(bI₀'  .<=   bI, dims=2)
                 gOConstraint = all(gO₀'  .<=   gO, dims=2)
                 globalContraint = dropdims(all(hcat(gIConstraint,bIConstraint,gOConstraint), dims=2), dims=2)
-                effScore_bfrontier = maximum(bO_ratio[globalContraint,:])
+                effScore_bfrontier = minimum(maximum(bO_ratio[globalContraint,:],dims=2))
                 effscore = max(effScore_normal,effScore_bfrontier)
                 return effscore
             else # constant RTS
@@ -513,13 +513,13 @@ function nonConvexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
                 bIConstraint = all(bI₀'  .>=   bI, dims=2)
                 gOConstraint = all(gO₀'  .<=   gO, dims=2)
                 globalContraint = dropdims(all(hcat(gIConstraint,bIConstraint,gOConstraint), dims=2), dims=2)
-                effScore_normal = maximum(bO_ratio[globalContraint,:])
+                effScore_normal = maximum(minimum(bO_ratio[globalContraint,:],dims=2)) #todo check this
                 # Bdisposal Distance function
                 gIConstraint = all(gI₀'  .>=   gI, dims=2)
                 bIConstraint = all(bI₀'  .<=   bI, dims=2)
                 gOConstraint = all(gO₀'  .<=   gO, dims=2)
                 globalContraint = dropdims(all(hcat(gIConstraint,bIConstraint,gOConstraint), dims=2), dims=2)
-                effScore_bfrontier = minimum(bO_ratio[globalContraint,:])
+                effScore_bfrontier = minimum(minimum(bO_ratio[globalContraint,:];dims=2)) # todo check this
                 effscore = min(effScore_normal,effScore_bfrontier)
                 return effscore
             else # constant RTS
