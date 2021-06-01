@@ -52,7 +52,7 @@ gOᵤ = gO[:,:,t+1]
 bOₜ = bO[:,:,t]
 bOᵤ = bO[:,:,t+1]
 
-z = 1
+z = 4
 gI₀ₜ = gI[z,:,t]
 gI₀ᵤ = gI[z,:,t+1]
 bI₀ₜ = bI[z,:,t]
@@ -62,7 +62,7 @@ gO₀ᵤ = gO[z,:,t+1]
 bO₀ₜ = bO[z,:,t]
 bO₀ᵤ = bO[z,:,t+1]
 
-convex = false
+convex = true
 
 if convex == true
     (dirGIm,dirGIa) = (-1,0,0,0) , (1,0,0,0)
@@ -125,7 +125,7 @@ gI_t̃_mult = problem(gI₀ᵤ,bI₀ₜ,gO₀ₜ,bO₀ₜ,gIₜ,bIₜ,gOₜ,bO�
 gI_t̃_add = problem(gI₀ᵤ,bI₀ₜ,gO₀ₜ,bO₀ₜ,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",prodStructure="addittive",
  directions=dirGIa,startValues=(),forceLinearModel=true,crossTime=true,convexAssumption=convex)
 @test  isapprox(gI_t̃_add,1 - 1/gI_t̃_mult, atol=0.000001)
-
+#=
 gI_ratio  =  gIₜ ./ (gI₀ᵤ)'
 bIConstraint = all((bI₀ₜ)'  .>=   bIₜ, dims=2)
 gOConstraint = all((gO₀ₜ)'  .<=   gOₜ, dims=2)
@@ -143,6 +143,7 @@ return effscore
 
 (bO₀ₜ)'  .<=   bOₜ
 gIₜ
+=#
 
 bI_t̃_mult = problem(gI₀ₜ,bI₀ᵤ,gO₀ₜ,bO₀ₜ,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",prodStructure="multiplicative",
  directions=dirBIm,startValues=(),forceLinearModel=true, crossTime=true,convexAssumption=convex)
@@ -210,6 +211,48 @@ bO_u_mult = problem(gI₀ᵤ,bI₀ᵤ,gO₀ᵤ,bO₀ᵤ,gIᵤ,bIᵤ,gOᵤ,bOᵤ,
 bO_u_add = problem(gI₀ᵤ,bI₀ᵤ,gO₀ᵤ,bO₀ᵤ,gIᵤ,bIᵤ,gOᵤ,bOᵤ,retToScale="variable",prodStructure="addittive",
  directions=dirBOa,startValues=(),forceLinearModel=true,convexAssumption=convex)
 
+# DMU measures at time t+1 and frontier at time t...
+gI_ut_mult = problem(gI₀ᵤ,bI₀ᵤ,gO₀ᵤ,bO₀ᵤ,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",prodStructure="multiplicative",
+  directions=dirGIm,startValues=(),forceLinearModel=true,convexAssumption=convex,crossTime=true)
+gI_ut_add = problem(gI₀ᵤ,bI₀ᵤ,gO₀ᵤ,bO₀ᵤ,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",prodStructure="addittive",
+  directions=dirGIa,startValues=(),forceLinearModel=true,convexAssumption=convex,crossTime=true)
+
+bI_ut_mult = problem(gI₀ᵤ,bI₀ᵤ,gO₀ᵤ,bO₀ᵤ,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",prodStructure="multiplicative",
+  directions=dirBIm,startValues=(),forceLinearModel=true,convexAssumption=convex,crossTime=true)
+bI_ut_add = problem(gI₀ᵤ,bI₀ᵤ,gO₀ᵤ,bO₀ᵤ,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",prodStructure="addittive",
+  directions=dirBIa,startValues=(),forceLinearModel=true,convexAssumption=convex,crossTime=true)
+
+gO_ut_mult = problem(gI₀ᵤ,bI₀ᵤ,gO₀ᵤ,bO₀ᵤ,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",prodStructure="multiplicative",
+ directions=dirGOm,startValues=(),forceLinearModel=true,convexAssumption=convex,crossTime=true)
+gO_ut_add = problem(gI₀ᵤ,bI₀ᵤ,gO₀ᵤ,bO₀ᵤ,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",prodStructure="addittive",
+ directions=dirGOa,startValues=(),forceLinearModel=true,convexAssumption=convex,crossTime=true)
+
+bO_ut_mult = problem(gI₀ᵤ,bI₀ᵤ,gO₀ᵤ,bO₀ᵤ,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",prodStructure="multiplicative",
+ directions=dirBOm,startValues=(),forceLinearModel=true,convexAssumption=convex,crossTime=true)
+bO_ut_add = problem(gI₀ᵤ,bI₀ᵤ,gO₀ᵤ,bO₀ᵤ,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",prodStructure="addittive",
+ directions=dirBOa,startValues=(),forceLinearModel=true,convexAssumption=convex,crossTime=true)
+
+# DMU measures at time t and frontier at time t+1...
+gI_tu_mult = problem(gI₀ₜ,bI₀ₜ,gO₀ₜ,bO₀ₜ,gIᵤ,bIᵤ,gOᵤ,bOᵤ,retToScale="variable",prodStructure="multiplicative",
+  directions=dirGIm,startValues=(),forceLinearModel=true,convexAssumption=convex,crossTime=true)
+gI_tu_add = problem(gI₀ₜ,bI₀ₜ,gO₀ₜ,bO₀ₜ,gIᵤ,bIᵤ,gOᵤ,bOᵤ,retToScale="variable",prodStructure="addittive",
+  directions=dirGIa,startValues=(),forceLinearModel=true,convexAssumption=convex,crossTime=true)
+
+bI_tu_mult = problem(gI₀ₜ,bI₀ₜ,gO₀ₜ,bO₀ₜ,gIᵤ,bIᵤ,gOᵤ,bOᵤ,retToScale="variable",prodStructure="multiplicative",
+  directions=dirBIm,startValues=(),forceLinearModel=true,convexAssumption=convex,crossTime=true)
+bI_tu_add = problem(gI₀ₜ,bI₀ₜ,gO₀ₜ,bO₀ₜ,gIᵤ,bIᵤ,gOᵤ,bOᵤ,retToScale="variable",prodStructure="addittive",
+  directions=dirBIa,startValues=(),forceLinearModel=true,convexAssumption=convex,crossTime=true)
+
+gO_tu_mult = problem(gI₀ₜ,bI₀ₜ,gO₀ₜ,bO₀ₜ,gIᵤ,bIᵤ,gOᵤ,bOᵤ,retToScale="variable",prodStructure="multiplicative",
+ directions=dirGOm,startValues=(),forceLinearModel=true,convexAssumption=convex,crossTime=true)
+gO_tu_add = problem(gI₀ₜ,bI₀ₜ,gO₀ₜ,bO₀ₜ,gIᵤ,bIᵤ,gOᵤ,bOᵤ,retToScale="variable",prodStructure="addittive",
+ directions=dirGOa,startValues=(),forceLinearModel=true,convexAssumption=convex,crossTime=true)
+
+bO_tu_mult = problem(gI₀ₜ,bI₀ₜ,gO₀ₜ,bO₀ₜ,gIᵤ,bIᵤ,gOᵤ,bOᵤ,retToScale="variable",prodStructure="multiplicative",
+ directions=dirBOm,startValues=(),forceLinearModel=true,convexAssumption=convex,crossTime=true)
+bO_tu_add = problem(gI₀ₜ,bI₀ₜ,gO₀ₜ,bO₀ₜ,gIᵤ,bIᵤ,gOᵤ,bOᵤ,retToScale="variable",prodStructure="addittive",
+ directions=dirBOa,startValues=(),forceLinearModel=true,convexAssumption=convex,crossTime=true)
+
 
 idx_gi_t = gI_mult
 idx_bi_t = bI_mult
@@ -223,6 +266,13 @@ idx_gi_u = gI_u_mult
 idx_bi_u = bI_u_mult
 idx_go_u = gO_u_mult
 idx_bo_u = bO_u_mult
+
+idx_gi_ut,idx_bi_ut,idx_go_ut,idx_bo_ut = gI_ut_mult,bI_ut_mult,gO_ut_mult,bO_ut_mult
+idx_gi_tu,idx_bi_tu,idx_go_tu,idx_bo_tu = gI_tu_mult,bI_tu_mult,gO_tu_mult,bO_tu_mult
+
+1/idx_gi_ut,1/idx_bi_ut,1/idx_go_ut,1/idx_bo_ut
+1/idx_gi_tu,1/idx_bi_tu,1/idx_go_tu,1/idx_bo_tu
+
 idx_gi_ũ = gI_ũ_mult
 idx_bi_ũ = bI_ũ_mult
 idx_go_ũ = gO_ũ_mult
@@ -248,27 +298,99 @@ idx_Go_u = (idx_go_ũ/idx_go_u)
 idx_Gu   = idx_Go_u/idx_Gi_u
 idx_G    = (idx_Gt * idx_Gu)^(1/2)
 
+idx_Bi_t = (idx_bi_t̃/idx_bi_t)
+idx_Bo_t = (idx_bo_t̃/idx_bo_t)
+idx_Bt   = 1/(idx_Bo_t * idx_Bi_t)
+idx_Bi_u = (idx_bi_u/idx_bi_ũ)
+idx_Bo_u = (idx_bo_u/idx_bo_ũ)
+idx_Bu   = 1/(idx_Bo_u*idx_Bi_u)
+idx_B    = (idx_Bt * idx_Bu)^(1/2)
+
+# Disaggregation T/E/S...
+idx_T_G_O = ((idx_go_t/idx_go_tu) * (idx_go_ut/idx_go_u) )^-(1/2)
+idx_T_B_O = ((idx_bo_t/idx_bo_tu) * (idx_bo_ut/idx_bo_u) )^-(1/2)
+idx_T_O   = idx_T_G_O * idx_T_B_O
+idx_T_G_I = ((idx_gi_t/idx_gi_tu) * (idx_gi_ut/idx_gi_u) )^-(1/2)
+idx_T_B_I = ((idx_bi_t/idx_bi_tu) * (idx_bi_ut/idx_bi_u) )^-(1/2)
+idx_T_I   = idx_T_G_I * idx_T_B_I
+idx_T     = (idx_T_O * idx_T_I)
+
+idx_E_G_O = (idx_go_u/idx_go_t)^-1
+idx_E_B_O = (idx_bo_u/idx_bo_t)^-1
+idx_E_O   = idx_E_G_O * idx_E_B_O
+idx_E_G_I = (idx_gi_u/idx_gi_t)^-1
+idx_E_B_I = (idx_bi_u/idx_bi_t)^-1
+idx_E_I   = idx_E_G_I * idx_E_B_I
+idx_E     = (idx_E_O * idx_E_I)
+
+idx_S_I   = idx / (idx_T_I * idx_E_I)
+idx_S_O   = idx / (idx_T_O * idx_E_O)
+idx_S_G_O = ((idx_go_t̃ / idx_go_ut) * (idx_gi_t̃ / idx_gi_t) * (idx_go_tu / idx_go_ũ) * (idx_gi_u/idx_gi_ũ)  )^-(1/2)
+idx_S_B_O = ((idx_bo_t̃ / idx_bo_ut) * (idx_bi_t̃ / idx_bi_t) * (idx_bo_tu / idx_bo_ũ) * (idx_bi_u/idx_bi_ũ)  )^-(1/2)
+@test idx_S_O ≈ idx_S_G_O * idx_S_B_O
+@test idx ≈ idx_T_O * idx_E_O * idx_S_O
+
+idx_S_G_I = ((idx_gi_t̃ / idx_gi_ut) * (idx_go_t̃ / idx_go_t) * (idx_gi_tu / idx_gi_ũ) * (idx_go_u/idx_go_ũ)  )^-(1/2)
+idx_S_B_I = ((idx_bi_t̃ / idx_bi_ut) * (idx_bo_t̃ / idx_bo_t) * (idx_bi_tu / idx_bi_ũ) * (idx_bo_u/idx_bo_ũ)  )^-(1/2)
+@test idx_S_I ≈ idx_S_G_I * idx_S_B_I
+@test idx ≈ idx_T_I * idx_E_I * idx_S_I
+
+
+idx_S_G_O = idx_G /  (idx_T_G_O * idx_E_G_O)
+idx_S_B_O = idx_B /  (idx_T_B_O * idx_E_B_O)
+idx_S_O   = idx_S_G_O * idx_S_B_O
+idx_S_G_I = idx_G /  (idx_T_G_I * idx_E_G_I)
+idx_S_B_I = idx_B /  (idx_T_B_I * idx_E_B_I)
+idx_S_I   = idx_S_G_I * idx_S_B_I
+idx_S     = (idx_S_O * idx_S_I)^(1/2)
+
 
 # Addittive
 (idx_gi_t, idx_bi_t, idx_go_t, idx_bo_t) = (gI_add, bI_add, gO_add, bO_add)
 (idx_gi_t̃, idx_bi_t̃, idx_go_t̃, idx_bo_t̃) = (gI_t̃_add, bI_t̃_add, gO_t̃_add, bO_t̃_add)
 (idx_gi_u, idx_bi_u, idx_go_u, idx_bo_u) = (gI_u_add, bI_u_add, gO_u_add, bO_u_add)
 (idx_gi_ũ, idx_bi_ũ, idx_go_ũ, idx_bo_ũ) = (gI_ũ_add, bI_ũ_add, gO_ũ_add, bO_ũ_add)
+idx_gi_ut,idx_bi_ut,idx_go_ut,idx_bo_ut = gI_ut_add,bI_ut_add,gO_ut_add,bO_ut_add
+idx_gi_tu,idx_bi_tu,idx_go_tu,idx_bo_tu = gI_tu_add,bI_tu_add,gO_tu_add,bO_tu_add
+
+
 
 idx_i_t = (idx_gi_t̃ - idx_gi_t) + (idx_bi_t̃ - idx_bi_t)
-idx_o_t = (idx_go_t - idx_go_t̃) + (idx_bo_t̃ - idx_bo_t)
+idx_o_t = (idx_go_t - idx_go_t̃) - (idx_bo_t̃ - idx_bo_t)
 idx_t   = idx_o_t - idx_i_t
 idx_i_u = (idx_gi_u - idx_gi_ũ) + (idx_bi_u - idx_bi_ũ)
-idx_o_u = (idx_go_ũ - idx_go_u) + (idx_bo_u - idx_bo_ũ)
+idx_o_u = (idx_go_ũ - idx_go_u) - (idx_bo_u - idx_bo_ũ)
 idx_u   = idx_o_u - idx_i_u
 idx     = (idx_t + idx_u) / 2
 
 
-=#
+
+
+idx_T_G_O = ((-idx_go_t+idx_go_tu) + (-idx_go_ut+idx_go_u) )/2
+idx_T_B_O = ((-idx_bo_t-idx_bo_tu) + (+idx_bo_ut+idx_bo_u) )/2
+idx_T_O   = idx_T_G_O + idx_T_B_O
+idx_T_G_I = ((-idx_gi_t+idx_gi_tu) + (-idx_gi_ut+idx_gi_u) )/2
+idx_T_B_I = ((-idx_bi_t+idx_bi_tu) + (-idx_bi_ut+idx_bi_u) )/2
+idx_T_I   = idx_T_G_I + idx_T_B_I
+idx_T     = (idx_T_O + idx_T_I)
+
+idx_E_G_O = -(idx_go_u-idx_go_t)
+idx_E_B_O = -(idx_bo_u-idx_bo_t)
+idx_E_O   = idx_E_G_O + idx_E_B_O
+idx_E_G_I = -(idx_gi_u-idx_gi_t)
+idx_E_B_I = -(idx_bi_u-idx_bi_t)
+idx_E_I   = idx_E_G_I + idx_E_B_I
+idx_E     = (idx_E_O + idx_E_I)
+
+idx_S_I   = idx - (idx_T_I + idx_E_I)
+idx_S_O   = idx - (idx_T_O + idx_E_O)
+idx_S_G_O = -((idx_go_t̃ - idx_go_ut) + (idx_gi_t̃ - idx_gi_t) + (idx_go_tu - idx_go_ũ) + (idx_gi_u-idx_gi_ũ)  )/2
+idx_S_B_O = -((idx_bo_t̃ + idx_bo_ut) + (idx_bi_t̃ - idx_bi_t) + (-idx_bo_tu - idx_bo_ũ) + (idx_bi_u-idx_bi_ũ)  )/2
+idx_S_G_I = -((idx_gi_t̃ - idx_gi_ut) + (idx_go_t̃ - idx_go_t) + (idx_gi_tu - idx_gi_ũ) + (idx_go_u-idx_go_ũ)  )/2
+idx_S_B_I = -((idx_bi_t̃ - idx_bi_ut) + (idx_bo_t̃ - idx_bo_t) + (idx_bi_tu - idx_bi_ũ) + (idx_bo_u-idx_bo_ũ)  )/2
 
 
 
-end
 
 
 
@@ -277,7 +399,19 @@ oecdAnalysis  = prodIndex(gI,gO,bO,bI;
 
 
 isapprox(oecdAnalysis.prodIndexes_G .* oecdAnalysis.prodIndexes_B, oecdAnalysis.prodIndexes, atol=0.000001)
-isapprox(oecdAnalysis.prodIndexes_T .* oecdAnalysis.prodIndexes_E .* oecdAnalysis.prodIndexes_S, oecdAnalysis.prodIndexes, atol=0.000001)
+#isapprox(oecdAnalysis.prodIndexes_T .* oecdAnalysis.prodIndexes_E .* oecdAnalysis.prodIndexes_S, oecdAnalysis.prodIndexes, atol=0.000001)
+
+
+oecdAnalysis.prodIndexes_T
+
+
+
+
+
+
+
+
+
 
 
 
@@ -286,8 +420,8 @@ oecdAnalysisA  = prodIndex(gI,gO,bO,bI;
                    retToScale="variable",prodStructure="addittive",convexAssumption=true)
 
 
-isapprox(oecdAnalysis.prodIndexes_G .+ oecdAnalysis.prodIndexes_B, oecdAnalysis.prodIndexes, atol=0.000001)
-isapprox(oecdAnalysis.prodIndexes_T .+ oecdAnalysis.prodIndexes_E .+ oecdAnalysis.prodIndexes_S, oecdAnalysis.prodIndexes, atol=0.000001)
+isapprox(oecdAnalysisA.prodIndexes_G .+ oecdAnalysisA.prodIndexes_B, oecdAnalysisA.prodIndexes, atol=0.000001)
+#isapprox(oecdAnalysisA.prodIndexes_T .+ oecdAnalysisA.prodIndexes_E .+ oecdAnalysisA.prodIndexes_S, oecdAnalysisA.prodIndexes, atol=0.000001)
 
 
 # Non convex test

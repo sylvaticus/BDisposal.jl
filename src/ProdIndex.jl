@@ -115,7 +115,7 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
     prodIndexes_E_G_I = Array{Union{Float64,Missing}}(undef, (size(gI,1),nPer-1))
     prodIndexes_E_B_I = Array{Union{Float64,Missing}}(undef, (size(gI,1),nPer-1))
 
-    prodIndexes_S     = Array{Union{Float64,Missing}}(undef, (size(gI,1),nPer-1)) # Scale (residual)
+    #prodIndexes_S     = Array{Union{Float64,Missing}}(undef, (size(gI,1),nPer-1)) # Scale (residual)
     prodIndexes_S_O   = Array{Union{Float64,Missing}}(undef, (size(gI,1),nPer-1))
     prodIndexes_S_G_O = Array{Union{Float64,Missing}}(undef, (size(gI,1),nPer-1))
     prodIndexes_S_B_O = Array{Union{Float64,Missing}}(undef, (size(gI,1),nPer-1))
@@ -235,6 +235,42 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
                         convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
                         directions=dirBO,crossTime=true)
 
+            # DMU at t, frontier at t+1...
+            idx_gi_tu = problem(gIₜ₀,bIₜ₀,gOₜ₀,bOₜ₀,gIᵤ,bIᵤ,gOᵤ,bOᵤ,
+                        retToScale=retToScale,prodStructure=prodStructure,
+                        convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
+                        directions=dirGI,crossTime=true)
+            idx_bi_tu = (nBI == 0) ? noBadIndexDefault : problem(gIₜ₀,bIₜ₀,gOₜ₀,bOₜ₀,gIᵤ,bIᵤ,gOᵤ,bOᵤ,
+                        retToScale=retToScale,prodStructure=prodStructure,
+                        convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
+                        directions=dirBI,crossTime=true)
+            idx_go_tu = problem(gIₜ₀,bIₜ₀,gOₜ₀,bOₜ₀,gIᵤ,bIᵤ,gOᵤ,bOᵤ,
+                        retToScale=retToScale,prodStructure=prodStructure,
+                        convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
+                        directions=dirGO,crossTime=true)
+            idx_bo_tu = problem(gIₜ₀,bIₜ₀,gOₜ₀,bOₜ₀,gIᵤ,bIᵤ,gOᵤ,bOᵤ,
+                        retToScale=retToScale,prodStructure=prodStructure,
+                        convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
+                        directions=dirBO,crossTime=true)
+
+            # DMU at t+1, frontier at t...
+            idx_gi_ut = problem(gIᵤ₀,bIᵤ₀,gOᵤ₀,bOᵤ₀,gIₜ,bIₜ,gOₜ,bOₜ,
+                        retToScale=retToScale,prodStructure=prodStructure,
+                        convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
+                        directions=dirGI,crossTime=true)
+            idx_bi_ut = (nBI == 0) ? noBadIndexDefault : problem(gIᵤ₀,bIᵤ₀,gOᵤ₀,bOᵤ₀,gIₜ,bIₜ,gOₜ,bOₜ,
+                        retToScale=retToScale,prodStructure=prodStructure,
+                        convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
+                        directions=dirBI,crossTime=true)
+            idx_go_ut = problem(gIᵤ₀,bIᵤ₀,gOᵤ₀,bOᵤ₀,gIₜ,bIₜ,gOₜ,bOₜ,
+                        retToScale=retToScale,prodStructure=prodStructure,
+                        convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
+                        directions=dirGO,crossTime=true)
+            idx_bo_ut = problem(gIᵤ₀,bIᵤ₀,gOᵤ₀,bOᵤ₀,gIₜ,bIₜ,gOₜ,bOₜ,
+                        retToScale=retToScale,prodStructure=prodStructure,
+                        convexAssumption=convexAssumption,forceLinearModel=forceLinearModel,
+                        directions=dirBO,crossTime=true)
+
             # Computing aggregated for the full (gI,Bi,bO,gO) partition...
             if prodStructure == "multiplicative"
                 idx_i_t = (idx_gi_t̃/idx_gi_t) * (idx_bi_t̃/idx_bi_t)
@@ -291,10 +327,10 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
                idx_B    = (idx_Bt * idx_Bu)^(1/2)
             else
                 idx_Bi_t = (idx_bi_t̃ - idx_bi_t)
-                idx_Bo_t = (idx_bo_t - idx_bo_t̃)
+                idx_Bo_t = (idx_bo_t̃ - idx_bo_t)
                 idx_Bt   = - idx_Bo_t - idx_Bi_t
                 idx_Bi_u = (idx_bi_u - idx_bi_ũ)
-                idx_Bo_u = (idx_bo_ũ - idx_bo_u)
+                idx_Bo_u = (idx_bo_u - idx_bo_ũ)
                 idx_Bu   = - idx_Bo_u - idx_Bi_u
                 idx_B    = (idx_Bt + idx_Bu) / 2
             end
@@ -302,30 +338,58 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
 
             # Computing tecnological/efficiency/residual decomposition
             if prodStructure == "multiplicative"
-                idx_T_G_O = ((idx_go_t/idx_go_ũ) * (idx_go_t̃/idx_go_u) )^(1/2)
-                idx_T_B_O = ((idx_bo_t/idx_bo_ũ) * (idx_bo_t̃/idx_bo_u) )^(1/2)
+                # Disaggregation T/E/S...
+                idx_T_G_O = ((idx_go_t/idx_go_tu) * (idx_go_ut/idx_go_u) )^-(1/2)
+                idx_T_B_O = ((idx_bo_t/idx_bo_tu) * (idx_bo_ut/idx_bo_u) )^-(1/2)
                 idx_T_O   = idx_T_G_O * idx_T_B_O
-                idx_T_G_I = ((idx_gi_t/idx_gi_ũ) * (idx_gi_t̃/idx_gi_u) )^(1/2)
-                idx_T_B_I = ((idx_bi_t/idx_bi_ũ) * (idx_bi_t̃/idx_bi_u) )^(1/2)
+                idx_T_G_I = ((idx_gi_t/idx_gi_tu) * (idx_gi_ut/idx_gi_u) )^-(1/2)
+                idx_T_B_I = ((idx_bi_t/idx_bi_tu) * (idx_bi_ut/idx_bi_u) )^-(1/2)
                 idx_T_I   = idx_T_G_I * idx_T_B_I
-                idx_T     = (idx_T_O * idx_T_I)^(1/2)
+                idx_T     = (idx_T_O * idx_T_I)
 
-                idx_E_G_O = idx_go_u/idx_go_t
-                idx_E_B_O = idx_bo_u/idx_bo_t
+                idx_E_G_O = (idx_go_u/idx_go_t)^-1
+                idx_E_B_O = (idx_bo_u/idx_bo_t)^-1
                 idx_E_O   = idx_E_G_O * idx_E_B_O
-                idx_E_G_I = idx_gi_u/idx_gi_t
-                idx_E_B_I = idx_bi_u/idx_bi_t
+                idx_E_G_I = (idx_gi_u/idx_gi_t)^-1
+                idx_E_B_I = (idx_bi_u/idx_bi_t)^-1
                 idx_E_I   = idx_E_G_I * idx_E_B_I
-                idx_E     = (idx_E_O * idx_E_I)^(1/2)
+                idx_E     = (idx_E_O * idx_E_I)
 
-                idx_S_G_O = idx_G /  (idx_T_G_O * idx_E_G_O)
-                idx_S_B_O = idx_B /  (idx_T_B_O * idx_E_B_O)
-                idx_S_O   = idx_S_G_O * idx_S_B_O
-                idx_S_G_I = idx_G /  (idx_T_G_I * idx_E_G_I)
-                idx_S_B_I = idx_B /  (idx_T_B_I * idx_E_B_I)
-                idx_S_I   = idx_S_G_I * idx_S_B_I
-                idx_S     = (idx_S_O * idx_S_I)^(1/2)
+                idx_S_I   = idx / (idx_T_I * idx_E_I)
+                idx_S_O   = idx / (idx_T_O * idx_E_O)
+                idx_S_G_O = ((idx_go_t̃ / idx_go_ut) * (idx_gi_t̃ / idx_gi_t) * (idx_go_tu / idx_go_ũ) * (idx_gi_u/idx_gi_ũ)  )^-(1/2)
+                idx_S_B_O = ((idx_bo_t̃ / idx_bo_ut) * (idx_bi_t̃ / idx_bi_t) * (idx_bo_tu / idx_bo_ũ) * (idx_bi_u/idx_bi_ũ)  )^-(1/2)
+                idx_S_G_I = ((idx_gi_t̃ / idx_gi_ut) * (idx_go_t̃ / idx_go_t) * (idx_gi_tu / idx_gi_ũ) * (idx_go_u/idx_go_ũ)  )^-(1/2)
+                idx_S_B_I = ((idx_bi_t̃ / idx_bi_ut) * (idx_bo_t̃ / idx_bo_t) * (idx_bi_tu / idx_bi_ũ) * (idx_bo_u/idx_bo_ũ)  )^-(1/2)
+
+
             else # addittive production structure
+                # Disaggregation T/E/S...
+                idx_T_G_O = ((-idx_go_t+idx_go_tu) + (-idx_go_ut+idx_go_u) )/2
+                idx_T_B_O = ((-idx_bo_t-idx_bo_tu) + (+idx_bo_ut+idx_bo_u) )/2
+                idx_T_O   = idx_T_G_O + idx_T_B_O
+                idx_T_G_I = ((-idx_gi_t+idx_gi_tu) + (-idx_gi_ut+idx_gi_u) )/2
+                idx_T_B_I = ((-idx_bi_t+idx_bi_tu) + (-idx_bi_ut+idx_bi_u) )/2
+                idx_T_I   = idx_T_G_I + idx_T_B_I
+                idx_T     = (idx_T_O + idx_T_I)
+
+                idx_E_G_O = -(idx_go_u-idx_go_t)
+                idx_E_B_O = -(idx_bo_u-idx_bo_t)
+                idx_E_O   = idx_E_G_O + idx_E_B_O
+                idx_E_G_I = -(idx_gi_u-idx_gi_t)
+                idx_E_B_I = -(idx_bi_u-idx_bi_t)
+                idx_E_I   = idx_E_G_I + idx_E_B_I
+                idx_E     = (idx_E_O + idx_E_I)
+
+                idx_S_I   = idx - (idx_T_I + idx_E_I)
+                idx_S_O   = idx - (idx_T_O + idx_E_O)
+                idx_S_G_O = -((idx_go_t̃ - idx_go_ut) + (idx_gi_t̃ - idx_gi_t) + (idx_go_tu - idx_go_ũ) + (idx_gi_u-idx_gi_ũ)  )/2
+                idx_S_B_O = -((idx_bo_t̃ + idx_bo_ut) + (idx_bi_t̃ - idx_bi_t) + (-idx_bo_tu - idx_bo_ũ) + (idx_bi_u-idx_bi_ũ)  )/2
+                idx_S_G_I = -((idx_gi_t̃ - idx_gi_ut) + (idx_go_t̃ - idx_go_t) + (idx_gi_tu - idx_gi_ũ) + (idx_go_u-idx_go_ũ)  )/2
+                idx_S_B_I = -((idx_bi_t̃ - idx_bi_ut) + (idx_bo_t̃ - idx_bo_t) + (idx_bi_tu - idx_bi_ũ) + (idx_bo_u-idx_bo_ũ)  )/2
+
+
+                #=
                 idx_T_G_O = ((idx_go_t-idx_go_ũ) + (idx_go_t̃-idx_go_u) )/2
                 idx_T_B_O = ((idx_bo_t-idx_bo_ũ) + (idx_bo_t̃-idx_bo_u) )/2
                 idx_T_O   = idx_T_G_O + idx_T_B_O
@@ -348,7 +412,8 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
                 idx_S_G_I = idx_G -  (idx_T_G_I + idx_E_G_I)
                 idx_S_B_I = idx_B -  (idx_T_B_I + idx_E_B_I)
                 idx_S_I   = idx_S_G_I + idx_S_B_I
-                idx_S     = (idx_S_O + idx_S_I)/2
+                #idx_S     = (idx_S_O + idx_S_I)/2
+                =#
             end
 
             prodIndexes_T[z,t]      =  idx_T
@@ -365,7 +430,7 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
             prodIndexes_E_I[z,t]    =  idx_E_I
             prodIndexes_E_G_I[z,t]  =  idx_E_G_I
             prodIndexes_E_B_I[z,t]  =  idx_E_B_I
-            prodIndexes_S[z,t]      =  idx_S
+            #prodIndexes_S[z,t]      =  idx_S
             prodIndexes_S_O[z,t]    =  idx_S_O
             prodIndexes_S_G_O[z,t]  =  idx_S_G_O
             prodIndexes_S_B_O[z,t]  =  idx_S_B_O
@@ -393,7 +458,7 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
             prodIndexes_E_I    =  prodIndexes_E_I   ,
             prodIndexes_E_G_I  =  prodIndexes_E_G_I ,
             prodIndexes_E_B_I  =  prodIndexes_E_B_I ,
-            prodIndexes_S      =  prodIndexes_S     ,
+            #prodIndexes_S      =  prodIndexes_S     ,
             prodIndexes_S_O    =  prodIndexes_S_O   ,
             prodIndexes_S_G_O  =  prodIndexes_S_G_O ,
             prodIndexes_S_B_O  =  prodIndexes_S_B_O ,
