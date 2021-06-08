@@ -52,7 +52,7 @@ gOᵤ = gO[:,:,t+1]
 bOₜ = bO[:,:,t]
 bOᵤ = bO[:,:,t+1]
 
-z = 4
+z = 1
 gI₀ₜ = gI[z,:,t]
 gI₀ᵤ = gI[z,:,t+1]
 bI₀ₜ = bI[z,:,t]
@@ -62,7 +62,7 @@ gO₀ᵤ = gO[z,:,t+1]
 bO₀ₜ = bO[z,:,t]
 bO₀ᵤ = bO[z,:,t+1]
 
-convex = true
+convex = false
 
 if convex == true
     (dirGIm,dirGIa) = (-1,0,0,0) , (1,0,0,0)
@@ -125,25 +125,6 @@ gI_t̃_mult = problem(gI₀ᵤ,bI₀ₜ,gO₀ₜ,bO₀ₜ,gIₜ,bIₜ,gOₜ,bO�
 gI_t̃_add = problem(gI₀ᵤ,bI₀ₜ,gO₀ₜ,bO₀ₜ,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",prodStructure="addittive",
  directions=dirGIa,startValues=(),forceLinearModel=true,crossTime=true,convexAssumption=convex)
 @test  isapprox(gI_t̃_add,1 - 1/gI_t̃_mult, atol=0.000001)
-#=
-gI_ratio  =  gIₜ ./ (gI₀ᵤ)'
-bIConstraint = all((bI₀ₜ)'  .>=   bIₜ, dims=2)
-gOConstraint = all((gO₀ₜ)'  .<=   gOₜ, dims=2)
-bOConstraint = all((bO₀ₜ)'  .<=   bOₜ, dims=2)
-globalContraint = dropdims(all(hcat(bIConstraint,gOConstraint,bOConstraint), dims=2), dims=2)
-effScore_normal = minimum(maximum(gI_ratio[globalContraint,:],dims=2))
-# Bdisposal Distance function
-bIConstraint = all(bI₀'  .>=   bI, dims=2)
-gOConstraint = all(gO₀'  .<=   gO, dims=2)
-bOConstraint = all(bO₀'  .>=   bO, dims=2)
-globalContraint = dropdims(all(hcat(bIConstraint,gOConstraint,bOConstraint), dims=2), dims=2)
-effScore_bfrontier = minimum(gI_ratio[globalContraint,:])
-effscore = max(effScore_normal,effScore_bfrontier)
-return effscore
-
-(bO₀ₜ)'  .<=   bOₜ
-gIₜ
-=#
 
 bI_t̃_mult = problem(gI₀ₜ,bI₀ᵤ,gO₀ₜ,bO₀ₜ,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",prodStructure="multiplicative",
  directions=dirBIm,startValues=(),forceLinearModel=true, crossTime=true,convexAssumption=convex)
@@ -155,14 +136,14 @@ gO_t̃_mult = problem(gI₀ₜ,bI₀ₜ,gO₀ᵤ,bO₀ₜ,gIₜ,bIₜ,gOₜ,bO�
  directions=dirGOm,startValues=(),forceLinearModel=true, crossTime=true,convexAssumption=convex)
 gO_t̃_add = problem(gI₀ₜ,bI₀ₜ,gO₀ᵤ,bO₀ₜ,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",prodStructure="addittive",
  directions=dirGOa,startValues=(),forceLinearModel=true, crossTime=true,convexAssumption=convex)
-@test gO_t̃_add ≈ (gO_t̃_mult -1)
+@test isapprox(gO_t̃_add,(gO_t̃_mult -1);atol=0.0001)
+
 
 bO_t̃_mult = problem(gI₀ₜ,bI₀ₜ,gO₀ₜ,bO₀ᵤ,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",prodStructure="multiplicative",
  directions=dirBOm,startValues=(),forceLinearModel=true, crossTime=true,convexAssumption=convex)
 bO_t̃_add = problem(gI₀ₜ,bI₀ₜ,gO₀ₜ,bO₀ᵤ,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",prodStructure="addittive",
  directions=dirBOa,startValues=(),forceLinearModel=true, crossTime=true,convexAssumption=convex)
 @test bO_t̃_add ≈ 1 - 1/bO_t̃_mult
-
 
 # Observation at time t, all other dmu at time t+1....
 gI_ũ_mult = problem(gI₀ₜ,bI₀ᵤ,gO₀ᵤ,bO₀ᵤ,gIᵤ,bIᵤ,gOᵤ,bOᵤ,retToScale="variable",prodStructure="multiplicative",
@@ -181,7 +162,7 @@ gO_ũ_mult = problem(gI₀ᵤ,bI₀ᵤ,gO₀ₜ,bO₀ᵤ,gIᵤ,bIᵤ,gOᵤ,bO�
  directions=dirGOm,startValues=(),forceLinearModel=true, crossTime=true,convexAssumption=convex)
 gO_ũ_add = problem(gI₀ᵤ,bI₀ᵤ,gO₀ₜ,bO₀ᵤ,gIᵤ,bIᵤ,gOᵤ,bOᵤ,retToScale="variable",prodStructure="addittive",
  directions=dirGOa,startValues=(),forceLinearModel=true, crossTime=true,convexAssumption=convex)
-@test gO_ũ_add ≈ (gO_ũ_mult -1)
+@test isapprox(gO_ũ_add, (gO_ũ_mult -1), atol = 0.0001)
 
 bO_ũ_mult = problem(gI₀ᵤ,bI₀ᵤ,gO₀ᵤ,bO₀ₜ,gIᵤ,bIᵤ,gOᵤ,bOᵤ,retToScale="variable",prodStructure="multiplicative",
  directions=dirBOm,startValues=(),forceLinearModel=true, crossTime=true,convexAssumption=convex)
@@ -214,6 +195,7 @@ bO_u_add = problem(gI₀ᵤ,bI₀ᵤ,gO₀ᵤ,bO₀ᵤ,gIᵤ,bIᵤ,gOᵤ,bOᵤ,r
 # DMU measures at time t+1 and frontier at time t...
 gI_ut_mult = problem(gI₀ᵤ,bI₀ᵤ,gO₀ᵤ,bO₀ᵤ,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",prodStructure="multiplicative",
   directions=dirGIm,startValues=(),forceLinearModel=true,convexAssumption=convex,crossTime=true)
+
 gI_ut_add = problem(gI₀ᵤ,bI₀ᵤ,gO₀ᵤ,bO₀ᵤ,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",prodStructure="addittive",
   directions=dirGIa,startValues=(),forceLinearModel=true,convexAssumption=convex,crossTime=true)
 
@@ -446,13 +428,33 @@ oecdAnalysis_nc  = prodIndex(gI,gO,bO,bI;
                    retToScale="variable",prodStructure="multiplicative",convexAssumption=false)
 
 
+oecdAnalysis_nc.prodIndexes
+
+
 isapprox(oecdAnalysis_nc.prodIndexes_G .* oecdAnalysis_nc.prodIndexes_B, oecdAnalysis_nc.prodIndexes, atol=0.000001)
 isapprox(oecdAnalysis_nc.prodIndexes_T .* oecdAnalysis_nc.prodIndexes_E .* oecdAnalysis_nc.prodIndexes_S, oecdAnalysis_nc.prodIndexes, atol=0.000001)
 
 
 
+oecdAnalysis_ncA  = prodIndex(gI,gO,bO,bI;
+                   retToScale="variable",prodStructure="additive",convexAssumption=false)
 
-add = oecdAnalysisA.prodIndexes
+oecdAnalysis_ncA.prodIndexes
+
+
+
+
+
+
+
+
+
+
+
+
+
+log.(oecdAnalysis_nc.prodIndexes)
+
 
 #=
 mBool = mult .> (1 - myeps)
