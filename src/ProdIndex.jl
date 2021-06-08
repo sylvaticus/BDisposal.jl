@@ -92,7 +92,7 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
     # Output containers
 
     # - Global
-    prodIndexes = Array{Union{Float64,Missing}}(undef, (size(gI,1),nPer-1))
+    prodIndexes = Array{Union{Float64,Missing}}(undef, (nDMUs,nPer-1))
 
     # - decomposition by type of the inputs or outputs (Good vs Bad)
     prodIndexes_G = Array{Union{Float64,Missing}}(undef, (size(gI,1),nPer-1))
@@ -122,7 +122,7 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
     prodIndexes_S_I   = Array{Union{Float64,Missing}}(undef, (size(gI,1),nPer-1))
     prodIndexes_S_G_I = Array{Union{Float64,Missing}}(undef, (size(gI,1),nPer-1))
     prodIndexes_S_B_I = Array{Union{Float64,Missing}}(undef, (size(gI,1),nPer-1))
-
+    prodIndexes_S     = Array{Union{Float64,Missing}}(undef, (nDMUs,nPer-1))
 
 
 
@@ -362,6 +362,8 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
                 idx_S_G_I = ((idx_gi_t̃ / idx_gi_ut) * (idx_go_t̃ / idx_go_t) * (idx_gi_tu / idx_gi_ũ) * (idx_go_u/idx_go_ũ)  )^-(1/2)
                 idx_S_B_I = ((idx_bi_t̃ / idx_bi_ut) * (idx_bo_t̃ / idx_bo_t) * (idx_bi_tu / idx_bi_ũ) * (idx_bo_u/idx_bo_ũ)  )^-(1/2)
 
+                idx_S     = idx / (idx_T * idx_E)
+
 
             else # addittive production structure
                 # Disaggregation T/E/S...
@@ -387,7 +389,7 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
                 idx_S_B_O = -((idx_bo_t̃ + idx_bo_ut) + (idx_bi_t̃ - idx_bi_t) + (-idx_bo_tu - idx_bo_ũ) + (idx_bi_u-idx_bi_ũ)  )/2
                 idx_S_G_I = -((idx_gi_t̃ - idx_gi_ut) + (idx_go_t̃ - idx_go_t) + (idx_gi_tu - idx_gi_ũ) + (idx_go_u-idx_go_ũ)  )/2
                 idx_S_B_I = -((idx_bi_t̃ - idx_bi_ut) + (idx_bo_t̃ - idx_bo_t) + (idx_bi_tu - idx_bi_ũ) + (idx_bo_u-idx_bo_ũ)  )/2
-
+                idx_S     = idx - (idx_T + idx_E)
 
                 #=
                 idx_T_G_O = ((idx_go_t-idx_go_ũ) + (idx_go_t̃-idx_go_u) )/2
@@ -430,7 +432,7 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
             prodIndexes_E_I[z,t]    =  idx_E_I
             prodIndexes_E_G_I[z,t]  =  idx_E_G_I
             prodIndexes_E_B_I[z,t]  =  idx_E_B_I
-            #prodIndexes_S[z,t]      =  idx_S
+            prodIndexes_S[z,t]      =  idx_S
             prodIndexes_S_O[z,t]    =  idx_S_O
             prodIndexes_S_G_O[z,t]  =  idx_S_G_O
             prodIndexes_S_B_O[z,t]  =  idx_S_B_O
@@ -458,7 +460,7 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
             prodIndexes_E_I    =  prodIndexes_E_I   ,
             prodIndexes_E_G_I  =  prodIndexes_E_G_I ,
             prodIndexes_E_B_I  =  prodIndexes_E_B_I ,
-            #prodIndexes_S      =  prodIndexes_S     ,
+            prodIndexes_S      =  prodIndexes_S     ,
             prodIndexes_S_O    =  prodIndexes_S_O   ,
             prodIndexes_S_G_O  =  prodIndexes_S_G_O ,
             prodIndexes_S_B_O  =  prodIndexes_S_B_O ,

@@ -402,7 +402,15 @@ isapprox(oecdAnalysis.prodIndexes_G .* oecdAnalysis.prodIndexes_B, oecdAnalysis.
 #isapprox(oecdAnalysis.prodIndexes_T .* oecdAnalysis.prodIndexes_E .* oecdAnalysis.prodIndexes_S, oecdAnalysis.prodIndexes, atol=0.000001)
 
 
+oecdAnalysis.prodIndexes
+
 oecdAnalysis.prodIndexes_T
+
+
+oecdAnalysis.prodIndexes_E
+
+
+oecdAnalysis.prodIndexes_S
 
 
 
@@ -418,6 +426,14 @@ oecdAnalysis.prodIndexes_T
 
 oecdAnalysisA  = prodIndex(gI,gO,bO,bI;
                    retToScale="variable",prodStructure="addittive",convexAssumption=true)
+
+
+oecdAnalysisA.prodIndexes_T
+oecdAnalysisA.prodIndexes_E
+oecdAnalysisA.prodIndexes_S
+
+
+
 
 
 isapprox(oecdAnalysisA.prodIndexes_G .+ oecdAnalysisA.prodIndexes_B, oecdAnalysisA.prodIndexes, atol=0.000001)
