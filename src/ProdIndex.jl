@@ -138,17 +138,17 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
         gOᵤ = gO[:,:,t+1]
         bOₜ = bO[:,:,t]
         bOᵤ = bO[:,:,t+1]
-        if convexAssumption == true
+        #if convexAssumption == true
             dirGI = prodStructure == "multiplicative" ? (-1,0,0,0) : (1,0,0,0)
             dirBI = prodStructure == "multiplicative" ? (0,-1,0,0) : (0,1,0,0)
             dirGO = prodStructure == "multiplicative" ? (0,0,1,0)  : (0,0,1,0)
             dirBO = prodStructure == "multiplicative" ? (0,0,0,-1) : (0,0,0,1)
-        else
-            dirGI = prodStructure == "multiplicative" ? (1,0,0,0)  : (1,0,0,0)
-            dirBI = prodStructure == "multiplicative" ? (0,1,0,0)  : (0,1,0,0)
-            dirGO = prodStructure == "multiplicative" ? (0,0,-1,0) : (0,0,1,0)
-            dirBO = prodStructure == "multiplicative" ? (0,0,0,1)  : (0,0,0,-1)
-        end
+        #else
+        #    dirGI = prodStructure == "multiplicative" ? (1,0,0,0)  : (1,0,0,0)
+        #    dirBI = prodStructure == "multiplicative" ? (0,1,0,0)  : (0,1,0,0)
+        #    dirGO = prodStructure == "multiplicative" ? (0,0,-1,0) : (0,0,1,0)
+        #    dirBO = prodStructure == "multiplicative" ? (0,0,0,1)  : (0,0,0,-1)
+        #end
         for z in 1:nDMUs
             gIₜ₀ = gIₜ[z,:]
             bIₜ₀ = bIₜ[z,:]
@@ -365,7 +365,7 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
                 idx_S     = idx / (idx_T * idx_E)
 
 
-            else # addittive production structure
+            else # additive production structure
                 # Disaggregation T/E/S...
                 idx_T_G_O = ((-idx_go_t+idx_go_tu) + (-idx_go_ut+idx_go_u) )/2
                 idx_T_B_O = ((-idx_bo_t-idx_bo_tu) + (+idx_bo_ut+idx_bo_u) )/2

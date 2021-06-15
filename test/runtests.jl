@@ -110,7 +110,7 @@ airportAnalysisVRTS_m_nc.prodIndexes
 
 
 airportAnalysisVRTS_a_nc  = prodIndex(gI,gO,bO,bI;
-                   retToScale="variable",prodStructure="addittive",convexAssumption=true)
+                   retToScale="variable",prodStructure="additive",convexAssumption=true)
 airportAnalysisVRTS_a_nc.prodIndexes
 
 
@@ -160,7 +160,7 @@ bO₀ = bOₜ[z,:,1]
 score1m = problem(gI₀,bI₀,gO₀,bO₀,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",
         prodStructure="multiplicative",convexAssumption=false,directions=(0,0,1,0))
 score1a = problem(gI₀,bI₀,gO₀,bO₀,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",
-        prodStructure="addittive",convexAssumption=false,directions=(0,0,1,0))
+        prodStructure="additive",convexAssumption=false,directions=(0,0,1,0))
 t =2
 gIₜ = gI[:,:,t]
 bIₜ = bI[:,:,t]
@@ -195,7 +195,7 @@ return effscore
 
 
 score1a = problem(gI₀,bI₀,gO₀,bO₀,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",
-        prodStructure="addittive",convexAssumption=false,directions=(0,0,1,0))
+        prodStructure="additive",convexAssumption=false,directions=(0,0,1,0))
 
 
 
