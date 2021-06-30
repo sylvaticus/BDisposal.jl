@@ -393,6 +393,24 @@ idx_o_u = (idx_go_ũ/idx_go_u) / (idx_bo_u/idx_bo_ũ)
 idx_u   = idx_o_u/idx_i_u
 idx     = (idx_t * idx_u)^(1/2)
 
+# Disaggregation  Good/ bads
+
+idx_Gi_t = 1/(idx_gi_t̃*idx_gi_t)
+idx_Go_t = (idx_go_t/idx_go_t̃)
+idx_Gt   = idx_Go_t/idx_Gi_t
+idx_Gi_u = 1/(idx_gi_u/idx_gi_ũ)
+idx_Go_u = (idx_go_ũ/idx_go_u)
+idx_Gu   = idx_Go_u/idx_Gi_u
+idx_G    = (idx_Gt * idx_Gu)^(1/2)
+
+idx_Bi_t = 1/(idx_bi_t̃/idx_bi_t)
+idx_Bo_t = 1/(idx_bo_t̃/idx_bo_t)
+idx_Bt   = (idx_Bo_t / idx_Bi_t)
+idx_Bi_u = 1/(idx_bi_u/idx_bi_ũ)
+idx_Bo_u = 1/(idx_bo_u/idx_bo_ũ)
+idx_Bu   = (idx_Bo_u/idx_Bi_u)
+idx_B    = (idx_Bt * idx_Bu)^(1/2)
+
 
 
 # A - ADDITTIVE CASE ################################
@@ -450,6 +468,24 @@ idx_i_u = -(idx_gi_ũ-idx_gi_u) - (idx_bi_ũ-idx_bi_u)
 idx_o_u = (idx_go_ũ-idx_go_u) - (idx_bo_u-idx_bo_ũ)
 idx_u   = idx_o_u-idx_i_u
 idx     = (idx_t + idx_u)/2
+
+# Disaggregation  Good/ bads
+
+idx_Gi_t = (idx_gi_t̃-idx_gi_t)
+idx_Go_t = (idx_go_t-idx_go_t̃)
+idx_Gt   = idx_Go_t-idx_Gi_t
+idx_Gi_u = (idx_gi_u-idx_gi_ũ)
+idx_Go_u = (idx_go_ũ-idx_go_u)
+idx_Gu   = idx_Go_u-idx_Gi_u
+idx_G    = (idx_Gt + idx_Gu)/2
+
+idx_Bi_t = (idx_bi_t̃-idx_bi_t)
+idx_Bo_t = (idx_bo_t̃-idx_bo_t)
+idx_Bt   = (-idx_Bo_t - idx_Bi_t)
+idx_Bi_u = (idx_bi_u-idx_bi_ũ)
+idx_Bo_u = (idx_bo_u-idx_bo_ũ)
+idx_Bu   = (-idx_Bo_u-idx_Bi_u)
+idx_B    = (idx_Bt + idx_Bu)/2
 
 
 
@@ -511,46 +547,30 @@ isapprox(oecdAnalysisA.prodIndexes_G .+ oecdAnalysisA.prodIndexes_B, oecdAnalysi
 oecdAnalysis_nc  = prodIndex(gI,gO,bO,bI;
                    retToScale="variable",prodStructure="multiplicative",convexAssumption=false)
 
-oecdAnalysis_nc.prodIndexes
-
-
-
-
-
-
-
-
-
-
-
-
-
-oecdAnalysis_nc_temp.prodIndexes[1,1]
-
-
-
-oecdAnalysis_nc_temp.prodIndexes .== oecdAnalysis_nc.prodIndexes
-
-
-
 isapprox(oecdAnalysis_nc.prodIndexes_G .* oecdAnalysis_nc.prodIndexes_B, oecdAnalysis_nc.prodIndexes, atol=0.000001)
-isapprox(oecdAnalysis_nc.prodIndexes_T .* oecdAnalysis_nc.prodIndexes_E .* oecdAnalysis_nc.prodIndexes_S, oecdAnalysis_nc.prodIndexes, atol=0.000001)
-
 
 
 oecdAnalysis_ncA  = prodIndex(gI,gO,bO,bI;
                    retToScale="variable",prodStructure="additive",convexAssumption=false)
 
+isapprox(oecdAnalysis_ncA.prodIndexes_G .+ oecdAnalysis_ncA.prodIndexes_B, oecdAnalysis_ncA.prodIndexes, atol=0.000001)
 
-
-
-oecdAnalysisA.prodIndexes
-
-oecdAnalysis_ncA.prodIndexes
 
 log.(oecdAnalysis_nc.prodIndexes)
 
-oecdAnalysisA.prodIndexes
+
+
+
+
+
+
+
+
+
+
+
+
+oecdAnalysis_ncA.prodIndexes
 
 
 
