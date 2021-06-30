@@ -19,5 +19,6 @@ For installation and usage instructions, examples and references please refer to
 ## Acknowledgements
 
 The development of this package at the _Bureau d'Economie Théorique et Appliquée_ (BETA, Nancy) was supported by the French National Research Agency through the [Laboratory of Excellence ARBRE](http://mycor.nancy.inra.fr/ARBRE/), a part of the “Investissements d'Avenir” Program (ANR 11 – LABX-0002-01).
+ 
 
 [![BLogos](docs/src/assets/logos_betaumr.png)](http://www.beta-umr7522.fr/)
