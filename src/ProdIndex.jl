@@ -283,10 +283,10 @@ function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3
                     idx     = (idx_t * idx_u)^(1/2)
                 else
                     idx_i_t = (idx_gi_t/idx_gi_t̃) * (idx_bi_t/idx_bi_t̃)
-                    idx_o_t = (idx_go_t/idx_go_t̃) * (idx_bo_t̃/idx_bo_t)
+                    idx_o_t = (idx_go_t/idx_go_t̃) / (idx_bo_t̃/idx_bo_t)
                     idx_t   = idx_o_t/idx_i_t
                     idx_i_u = (idx_gi_ũ/idx_gi_u) * (idx_bi_ũ/idx_bi_u)
-                    idx_o_u = (idx_go_ũ/idx_go_u) * (idx_bo_u/idx_bo_ũ)
+                    idx_o_u = (idx_go_ũ/idx_go_u) / (idx_bo_u/idx_bo_ũ)
                     idx_u   = idx_o_u/idx_i_u
                     idx     = (idx_t * idx_u)^(1/2)
                 end

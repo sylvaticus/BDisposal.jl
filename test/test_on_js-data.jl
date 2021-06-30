@@ -52,7 +52,7 @@ gOᵤ = gO[:,:,t+1]
 bOₜ = bO[:,:,t]
 bOᵤ = bO[:,:,t+1]
 
-z = 1
+z = 2
 gI₀ₜ = gI[z,:,t]
 gI₀ᵤ = gI[z,:,t+1]
 bI₀ₜ = bI[z,:,t]
@@ -69,6 +69,27 @@ convex = false
 (dirBIm,dirBIa) = (0,-1,0,0) , (0,1,0,0)
 (dirGOm,dirGOa) = (0,0,1,0)  , (0,0,1,0)
 (dirBOm,dirBOa) = (0,0,0,-1) , (0,0,0,1)
+
+#=
+gI_ut_mult = []
+for z in 1:nDMUs
+
+gI₀ₜ = gI[z,:,t]
+gI₀ᵤ = gI[z,:,t+1]
+bI₀ₜ = bI[z,:,t]
+bI₀ᵤ = bI[z,:,t+1]
+gO₀ₜ = gO[z,:,t]
+gO₀ᵤ = gO[z,:,t+1]
+bO₀ₜ = bO[z,:,t]
+bO₀ᵤ = bO[z,:,t+1]
+
+gI_ut_mult_z = problem(gI₀ᵤ,bI₀ᵤ,gO₀ᵤ,bO₀ᵤ,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",prodStructure="multiplicative",
+  directions=dirGIm,startValues=(),forceLinearModel=true,convexAssumption=convex,crossTime=true)
+push!(gI_ut_mult,gI_ut_mult_z)
+end
+
+gI_ut_mult
+=#
 
 
 
@@ -119,13 +140,22 @@ gI_t̃_mult = problem(gI₀ᵤ,bI₀ₜ,gO₀ₜ,bO₀ₜ,gIₜ,bIₜ,gOₜ,bO�
  directions=dirGIm,startValues=(),forceLinearModel=true, crossTime=true,convexAssumption=convex)
 gI_t̃_add = problem(gI₀ᵤ,bI₀ₜ,gO₀ₜ,bO₀ₜ,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",prodStructure="additive",
  directions=dirGIa,startValues=(),forceLinearModel=true,crossTime=true,convexAssumption=convex)
-@test  isapprox(gI_t̃_add,1 - 1/gI_t̃_mult, atol=0.000001)
+if convex
+  @test  isapprox(gI_t̃_add,1 - 1/gI_t̃_mult, atol=0.000001)
+else
+  @test  isapprox(gI_t̃_add,1 - gI_t̃_mult, atol=0.000001)
+end
 
 bI_t̃_mult = problem(gI₀ₜ,bI₀ᵤ,gO₀ₜ,bO₀ₜ,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",prodStructure="multiplicative",
  directions=dirBIm,startValues=(),forceLinearModel=true, crossTime=true,convexAssumption=convex)
 bI_t̃_add = problem(gI₀ₜ,bI₀ᵤ,gO₀ₜ,bO₀ₜ,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",prodStructure="additive",
  directions=dirBIa,startValues=(),forceLinearModel=true, crossTime=true,convexAssumption=convex)
-@test bI_t̃_add ≈ 1 - 1/bI_t̃_mult
+if convex
+  @test bI_t̃_add ≈ 1 - 1/bI_t̃_mult
+else
+  @test bI_t̃_add ≈ 1 - bI_t̃_mult
+end
+
 
 gO_t̃_mult = problem(gI₀ₜ,bI₀ₜ,gO₀ᵤ,bO₀ₜ,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",prodStructure="multiplicative",
  directions=dirGOm,startValues=(),forceLinearModel=true, crossTime=true,convexAssumption=convex)
@@ -145,13 +175,24 @@ gI_ũ_mult = problem(gI₀ₜ,bI₀ᵤ,gO₀ᵤ,bO₀ᵤ,gIᵤ,bIᵤ,gOᵤ,bO�
  directions=dirGIm,startValues=(),forceLinearModel=true, crossTime=true,convexAssumption=convex)
 gI_ũ_add = problem(gI₀ₜ,bI₀ᵤ,gO₀ᵤ,bO₀ᵤ,gIᵤ,bIᵤ,gOᵤ,bOᵤ,retToScale="variable",prodStructure="additive",
  directions=dirGIa,startValues=(),forceLinearModel=true,crossTime=true,convexAssumption=convex)
-@test  isapprox(gI_ũ_add,1 - 1/gI_ũ_mult, atol=0.000001)
+if convex
+  @test  isapprox(gI_ũ_add,1 - 1/gI_ũ_mult, atol=0.000001)
+else
+  @test  isapprox(gI_ũ_add,1 - gI_ũ_mult, atol=0.000001)
+end
+
+
 
 bI_ũ_mult = problem(gI₀ᵤ,bI₀ₜ,gO₀ᵤ,bO₀ᵤ,gIᵤ,bIᵤ,gOᵤ,bOᵤ,retToScale="variable",prodStructure="multiplicative",
  directions=dirBIm,startValues=(),forceLinearModel=true, crossTime=true,convexAssumption=convex)
 bI_ũ_add = problem(gI₀ᵤ,bI₀ₜ,gO₀ᵤ,bO₀ᵤ,gIᵤ,bIᵤ,gOᵤ,bOᵤ,retToScale="variable",prodStructure="additive",
  directions=dirBIa,startValues=(),forceLinearModel=true, crossTime=true,convexAssumption=convex)
-@test isapprox(bI_ũ_add, 1 - 1/bI_ũ_mult, atol=0.0000001)
+if convex
+  @test isapprox(bI_ũ_add, 1 - 1/bI_ũ_mult, atol=0.0000001)
+else
+  @test isapprox(bI_ũ_add, 1 - bI_ũ_mult, atol=0.0000001)
+end
+
 
 gO_ũ_mult = problem(gI₀ᵤ,bI₀ᵤ,gO₀ₜ,bO₀ᵤ,gIᵤ,bIᵤ,gOᵤ,bOᵤ,retToScale="variable",prodStructure="multiplicative",
  directions=dirGOm,startValues=(),forceLinearModel=true, crossTime=true,convexAssumption=convex)
@@ -190,9 +231,15 @@ bO_u_add = problem(gI₀ᵤ,bI₀ᵤ,gO₀ᵤ,bO₀ᵤ,gIᵤ,bIᵤ,gOᵤ,bOᵤ,r
 # DMU measures at time t+1 and frontier at time t...
 gI_ut_mult = problem(gI₀ᵤ,bI₀ᵤ,gO₀ᵤ,bO₀ᵤ,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",prodStructure="multiplicative",
   directions=dirGIm,startValues=(),forceLinearModel=true,convexAssumption=convex,crossTime=true)
-
 gI_ut_add = problem(gI₀ᵤ,bI₀ᵤ,gO₀ᵤ,bO₀ᵤ,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",prodStructure="additive",
   directions=dirGIa,startValues=(),forceLinearModel=true,convexAssumption=convex,crossTime=true)
+
+if convex
+  @test  isapprox(gI_ut_add,1 - 1/gI_ut_mult, atol=0.000001)
+else
+  @test  isapprox(gI_ut_add,1 - gI_ut_mult, atol=0.000001)
+end
+
 
 bI_ut_mult = problem(gI₀ᵤ,bI₀ᵤ,gO₀ᵤ,bO₀ᵤ,gIₜ,bIₜ,gOₜ,bOₜ,retToScale="variable",prodStructure="multiplicative",
   directions=dirBIm,startValues=(),forceLinearModel=true,convexAssumption=convex,crossTime=true)
@@ -215,6 +262,13 @@ gI_tu_mult = problem(gI₀ₜ,bI₀ₜ,gO₀ₜ,bO₀ₜ,gIᵤ,bIᵤ,gOᵤ,bOᵤ
 gI_tu_add = problem(gI₀ₜ,bI₀ₜ,gO₀ₜ,bO₀ₜ,gIᵤ,bIᵤ,gOᵤ,bOᵤ,retToScale="variable",prodStructure="additive",
   directions=dirGIa,startValues=(),forceLinearModel=true,convexAssumption=convex,crossTime=true)
 
+if convex
+  @test  isapprox(gI_tu_add,1 - 1/gI_tu_mult, atol=0.000001)
+else
+  @test  isapprox(gI_tu_add,1 - gI_tu_mult, atol=0.000001)
+end
+
+
 bI_tu_mult = problem(gI₀ₜ,bI₀ₜ,gO₀ₜ,bO₀ₜ,gIᵤ,bIᵤ,gOᵤ,bOᵤ,retToScale="variable",prodStructure="multiplicative",
   directions=dirBIm,startValues=(),forceLinearModel=true,convexAssumption=convex,crossTime=true)
 bI_tu_add = problem(gI₀ₜ,bI₀ₜ,gO₀ₜ,bO₀ₜ,gIᵤ,bIᵤ,gOᵤ,bOᵤ,retToScale="variable",prodStructure="addittive",
@@ -230,6 +284,7 @@ bO_tu_mult = problem(gI₀ₜ,bI₀ₜ,gO₀ₜ,bO₀ₜ,gIᵤ,bIᵤ,gOᵤ,bOᵤ
 bO_tu_add = problem(gI₀ₜ,bI₀ₜ,gO₀ₜ,bO₀ₜ,gIᵤ,bIᵤ,gOᵤ,bOᵤ,retToScale="variable",prodStructure="additive",
  directions=dirBOa,startValues=(),forceLinearModel=true,convexAssumption=convex,crossTime=true)
 
+############# MULTIPLICATIVE CASE
 
 idx_gi_t = gI_mult
 idx_bi_t = bI_mult
@@ -325,7 +380,19 @@ idx_S_I   = idx_S_G_I * idx_S_B_I
 idx_S     = (idx_S_O * idx_S_I)^(1/2)
 
 
-# Addittive
+############################
+# Non-convex case aggregation
+idx_i_t = (idx_gi_t/idx_gi_t̃) * (idx_bi_t/idx_bi_t̃)
+idx_o_t = (idx_go_t/idx_go_t̃) / (idx_bo_t̃/idx_bo_t)
+idx_t   = idx_o_t/idx_i_t
+idx_i_u = (idx_gi_ũ/idx_gi_u) * (idx_bi_ũ/idx_bi_u)
+idx_o_u = (idx_go_ũ/idx_go_u) / (idx_bo_u/idx_bo_ũ)
+idx_u   = idx_o_u/idx_i_u
+idx     = (idx_t * idx_u)^(1/2)
+
+
+
+#ADDITTIVE CASE ################################
 (idx_gi_t, idx_bi_t, idx_go_t, idx_bo_t) = (gI_add, bI_add, gO_add, bO_add)
 (idx_gi_t̃, idx_bi_t̃, idx_go_t̃, idx_bo_t̃) = (gI_t̃_add, bI_t̃_add, gO_t̃_add, bO_t̃_add)
 (idx_gi_u, idx_bi_u, idx_go_u, idx_bo_u) = (gI_u_add, bI_u_add, gO_u_add, bO_u_add)
@@ -343,8 +410,8 @@ idx_o_u = (idx_go_ũ - idx_go_u) - (idx_bo_u - idx_bo_ũ)
 idx_u   = idx_o_u - idx_i_u
 idx     = (idx_t + idx_u) / 2
 
-
-
+############
+# Convex case
 
 idx_T_G_O = ((-idx_go_t+idx_go_tu) + (-idx_go_ut+idx_go_u) )/2
 idx_T_B_O = ((-idx_bo_t-idx_bo_tu) + (+idx_bo_ut+idx_bo_u) )/2
@@ -370,10 +437,12 @@ idx_S_G_I = -((idx_gi_t̃ - idx_gi_ut) + (idx_go_t̃ - idx_go_t) + (idx_gi_tu - 
 idx_S_B_I = -((idx_bi_t̃ - idx_bi_ut) + (idx_bo_t̃ - idx_bo_t) + (idx_bi_tu - idx_bi_ũ) + (idx_bo_u-idx_bo_ũ)  )/2
 
 
-####################################
-# Non-convex case aggreagation.....
+##################
+# Non-convex case
 
-idx_i_t = (idx_gi_t/idx_gi_t̃) * (idx_bi_t/idx_bi_t̃)
+# multimlicative non convex
+
+idx_i_t = (idx_gi_t*idx_gi_t̃) * (idx_bi_t*idx_bi_t̃)
 idx_o_t = (idx_go_t/idx_go_t̃) * (idx_bo_t̃/idx_bo_t)
 idx_t   = idx_o_t/idx_i_t
 idx_i_u = (idx_gi_ũ/idx_gi_u) * (idx_bi_ũ/idx_bi_u)
@@ -548,7 +617,8 @@ isapprox(oecdAnalysisA.prodIndexes_G .+ oecdAnalysisA.prodIndexes_B, oecdAnalysi
 #isapprox(oecdAnalysisA.prodIndexes_T .+ oecdAnalysisA.prodIndexes_E .+ oecdAnalysisA.prodIndexes_S, oecdAnalysisA.prodIndexes, atol=0.000001)
 
 
-# Non convex test
+################################################################################
+# Non convex test ##############################################################
 
 oecdAnalysis_nc  = prodIndex(gI,gO,bO,bI;
                    retToScale="variable",prodStructure="multiplicative",convexAssumption=false)
