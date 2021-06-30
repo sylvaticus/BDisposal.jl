@@ -347,7 +347,7 @@ function nonConvexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
         globalContraint = dropdims(all(hcat(bIConstraint,gOConstraint,bOConstraint), dims=2), dims=2)
         effScore_bfrontier = ! any(globalContraint) ? missing : minimum(maximum(gI_ratio[globalContraint,:],dims=2))
         effscore = max(effScore_normal,effScore_bfrontier)
-        return 1/effscore
+        return effscore
     elseif  directions == (1,0,0,0) && prodStructure == "additive"
         gI_ratio  =  1 .- (gI ./ gI₀') # nDMU x ngI
         # Normal dist function
@@ -380,7 +380,7 @@ function nonConvexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
         globalContraint = dropdims(all(hcat(gIConstraint,gOConstraint,bOConstraint), dims=2), dims=2)
         effScore_bfrontier = ! any(globalContraint) ? missing : minimum(maximum(bI_ratio[globalContraint,:],dims=2))
         effscore = max(effScore_normal,effScore_bfrontier)
-        return 1/effscore
+        return effscore
     elseif  directions == (0,1,0,0) && prodStructure == "additive"
         bI_ratio  =  1 .- (bI ./ bI₀') # nDMU x ngI
         # Normal dist function
