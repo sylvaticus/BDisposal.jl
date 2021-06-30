@@ -50,9 +50,9 @@ productivity indexes improvements (or declines) between consecutive time periods
     - `prodIndexes_S_G_I`:    Decomposition for the scale (residual) component, good inputs
     - `prodIndexes_S_B_I`:    Decomposition for the scale (residual) component, bad inputs
 
-
- The second and third element of the tuple are respectively the "good inputs/outputs" and "bad/inputs/outputs" components. The first matrix can be retrieved from the two components by multiplying them (for `multiplicative` production structure) or summing them (for `additive` production strucure).
-
+The second and third element of the tuple are respectively the "good inputs/outputs" and "bad/inputs/outputs" components.
+The first matrix can be retrieved from the two components by multiplying them (for `multiplicative` production structure)
+or summing them (for `additive` production strucure).
 
 ## Description of the function
 
@@ -79,7 +79,8 @@ crease (respectively, decrrease) arises. A similar reasonnng applies for the mul
 technical and scale efficiency components.
 
 ## Notes:
-* The non-convex problem still need to consider bad inputs, consider directions, consider multiplicative/additive structures
+* The decomposition by technological, efficiency and scale components is done only for the convex assumption,
+as in the non-convex case the individual distance components used to compute these disaggregations are infinite.
 
 """
 function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3},bI::Array{Float64,3}=Array{Float64}(missing, (size(gI,1),0,size(gI,3)));

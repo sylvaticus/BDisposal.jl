@@ -1,10 +1,11 @@
 module BDisposal
 
-using JuMP, Ipopt, GLPK, AmplNLWriter
+using JuMP, Ipopt, GLPK
+#, AmplNLWriter
 
-export efficiencyScores, prodIndex, dmuEfficiency, dmuEfficiencyDual, dmuPass2
+export efficiencyScores, prodIndex, dmuEfficiency, dmuEfficiencyDual
 # for debug only:
-export problem, convexProblem, nonConvexProblem
+# export problem, convexProblem, nonConvexProblem, dmuPass2
 
 include("EfficiencyScores.jl")
 include("ProdIndex.jl")

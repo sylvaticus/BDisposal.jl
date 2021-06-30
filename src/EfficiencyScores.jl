@@ -18,9 +18,10 @@ distance to the production frontier, i.e. their degree of efficiency.
   *  `bO`: "Bad" outputs (3D matrix by DMUs, input items and periods)
   *  `bI`: "Bad" inputs (optional 3D matrix by DMUs, input items and periods) [default: empty array]
 - Keyword
-  *  `retToScale`: Wheter the return to scales should be assumed "constant" (default) or "variable"
+  *  `retToScale`: Wheter the returns to scale should be assumed "constant" or "variable" (default). Non-convex distance and test is computed
+      only under the "variable" assumption
   *  `prodStructure`: Wheter the production structure should be assumed "additive" (default) or "multiplicative"
-  *  `dirGI`,`dirBI`,`dirGO`,`dirBO`: The directions toward where to measure the efficiency (see notes) [default: `(0,0,1,-1)`]
+  *  `dirGI`,`dirBI`,`dirGO`,`dirBO`: The directions toward where to measure the efficiency (see notes) [default: `(0,0,1,0)`]
   *  `startθ`,`startμ`,`startλ`: Initial values in the convex optimisation problem [default: `(0,0,1.1)`]
 
 ## Returns:
@@ -75,22 +76,48 @@ additive framework. The informations provided by these tests define the shape of
 production process boundaries.
 
 ## Notes:
-* Only the static efficiency analysis is implemented at the moment
-* The non-convex problem still need to consider bad inputs, consider directions, consider multiplicative/additive structures
-* Directions toward where to measure the efficiency distance can be tuned using the `dirGI`,`dirBI`,`dirGO` and `dirBO` parameters. For example:
-  * To measure the distance toward "bad outputs": use `(0,0,1,-1)`
-  * ... TODO
+* Directions toward where to measure the efficiency distance can be tuned using the `dirGI`,`dirBI`,`dirGO` and `dirBO` parameters.
+* The following directions are supported:
+  - multiplicative pr. struct.: (-1,0,0,0), (0,-1,0,0), (0,0,1,0) or (0,0,0,-1)
+  - addittive pr. struct.: (1,0,0,0), (0,1,0,0), (0,0,1,0) or (0,0,0,1)
+  Other directions can be used to compute the direction under the convex frontier assumption, but the convexity test is not performed and,
+  for the multiplicative case, no guarantee is given on solving the underliying (non-linear) problem (different initial value
+  `startθ`,`startμ`,`startλ` can be attempted)
 
 """
 function efficiencyScores(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3},bI::Array{Float64,3}=Array{Float64}(undef, (size(gI,1),0,size(gI,3)));
-                          retToScale="constant",prodStructure="additive",
-                          dirGI=0,dirBI=0,dirGO=1,dirBO=-1,
+                          retToScale="variable",prodStructure="additive",
+                          dirGI=0,dirBI=0,dirGO=1,dirBO=0,
                           startθ=0,startμ=0,startλ=1.1)
 
     # Data processing
     nDMUs, nPer, nGI, nBI, nGO, nBO = size(gI,1), size(gI,3), size(gI,2), size(bI,2), size(gO,2), size(bO,2)
     λs_convex    = Array{Union{Missing,Float64,String}}(undef,nDMUs,nPer) # Output matrix hosting the results (nDMUs,nPer)
     λs_nonconvex = Array{Union{Missing,Float64,String}}(undef,nDMUs,nPer) # Output matrix hosting the results (nDMUs,nPer)
+    directions   = (dirGI,dirBI,dirGO,dirBO)
+
+
+    # Tests if doing also convex analysis or not
+    doNonConvexAnalysis = true
+
+    if retToScale == "constant"
+        @warn "Non-convex analysis is supported only with variable returns to scale"
+        doNonConvexAnalysis = false
+    end
+
+    if  prodStructure == "multiplicative"
+        if !( directions in [(-1,0,0,0),(0,-1,0,0),(0,0,1,0),(0,0,0,-1)])
+            @warn "Non-convex analysis not supported with these directions. For the multiplicative case,
+            non-convex analysis is supported only with directions (-1,0,0,0),(0,-1,0,0),(0,0,1,0) or (0,0,0,-1)"
+             doNonConvexAnalysis = false
+        end
+    else
+        if !( directions in [(1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1)])
+            @warn "Non-convex analysis not supported with these directions. For the addittive case,
+            non-convex analysis is supported only with directions (1,0,0,0),(0,1,0,0),(0,0,1,0) or (0,0,0,1)"
+             doNonConvexAnalysis = false
+        end
+    end
 
     # Loping over the periods
     for t in 1:nPer
@@ -98,11 +125,14 @@ function efficiencyScores(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Fl
         #bIₜ = nBI > 0 ? bI[:,:,t] : Array{Float64}(undef, 0,0)
         bIₜ = bI[:,:,t]
 
+        #println("Period: $t")
         # Solving for each dmu
         for z in 1:nDMUs
             gIₜ₀ = gIₜ[z,:]; gOₜ₀ = gOₜ[z,:]; bOₜ₀ = bOₜ[z,:]
             #bIₜ₀ = nBI > 0 ? bIₜ[z,:] : Float64[]
             bIₜ₀ = bIₜ[z,:]
+
+        #    println("DMU: $z")
 
 
             # CONVEX analysis....
@@ -116,17 +146,18 @@ function efficiencyScores(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Fl
                                      startValues=(startθ,startμ,startλ),
                                      forceLinearModel=forceLinearModel)
 
-            # NON Convex analysis
-            λs_nonconvex[z,t] = problem(gIₜ₀,bIₜ₀,gOₜ₀,bOₜ₀,gIₜ,bIₜ,gOₜ,bOₜ;
+            # Non-convex analysis (when implemented)...
+            λs_nonconvex[z,t] = doNonConvexAnalysis ? problem(gIₜ₀,bIₜ₀,gOₜ₀,bOₜ₀,gIₜ,bIₜ,gOₜ,bOₜ;
                                         retToScale=retToScale,prodStructure=prodStructure,
                                         directions=(dirGI,dirBI,dirGO,dirBO),
-                                        convexAssumption=false)
+                                        convexAssumption=false) : missing
         end # end of each dmu
     end # endof each period
 
+#    println("Done all DMU problems")
     nonConvTest_value = λs_nonconvex ./ λs_convex
     nonConvTest       = nonConvTest_value .< (1.0 - eps())
-    λs = min.(λs_nonconvex,λs_convex)
+    λs                = doNonConvexAnalysis ? min.(λs_nonconvex,λs_convex) : λs_convex
 
     return λs, λs_convex, λs_nonconvex, nonConvTest, nonConvTest_value
 end
