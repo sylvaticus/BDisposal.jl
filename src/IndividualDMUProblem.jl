@@ -42,6 +42,7 @@ function convexProblem(inp₀,bInp₀,gO₀,bO₀,inp,bInp,gO,bO;
 
                # Model declaration (efficiency model)
                effmodel = Model(() -> AmplNLWriter.Optimizer(Ipopt.amplexe))
+               #effmodel = Model(optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0))
                MOI.set(effmodel, MOI.RawParameter("print_level"), 0)
 
                # Defining variables
@@ -327,7 +328,7 @@ function nonConvexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
                        retToScale,prodStructure,
                        directions)
 
-    if retToScale == "constant" @error "Not supported" end
+    if retToScale == "constant" && directions != (0,0,1,-1) @error "Not supported" end
     nGI, nGO, nBO, nDMUs, nBI = length(gI₀), length(gO₀), length(bO₀), size(gI,1), length(bI₀)
     (dirGI,dirBI,dirGO,dirBO) = directions
 
@@ -446,7 +447,7 @@ function nonConvexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
         effscore = max(effScore_normal,effScore_bfrontier)
         return 1/effscore
     elseif  directions == (0,0,0,1) && prodStructure == "additive"
-                bO_ratio  =  1 .- (bO ./ bO₀') # nDMU x ngI
+        bO_ratio  =  1 .- (bO ./ bO₀') # nDMU x ngI
         # Normal dist function
         gIConstraint = all(gI₀'  .>=   gI, dims=2)
         bIConstraint = all(bI₀'  .>=   bI, dims=2)
@@ -461,12 +462,7 @@ function nonConvexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
         effScore_bfrontier = ! any(globalContraint) ? missing : minimum(minimum(bO_ratio[globalContraint,:];dims=2)) # todo check this
         effscore = min(effScore_normal,effScore_bfrontier)
         return effscore
-    else
-        #TODO: what to do with the test ?
-        @error "Directions not supported"
-        return missing
-
-        #=
+    elseif  directions == (0,0,1,-1) && prodStructure == "multiplicative"
         gI_ratio  =  gI₀' ./ gI
         bI_ratio  =  bI₀' ./ bI
         gO_ratio  =  gO ./ gO₀'
@@ -480,41 +476,11 @@ function nonConvexProblem(gI₀,bI₀,gO₀,bO₀,gI,bI,gO,bO;
             bFrontierDistances        = [minimum(gI_ratio[z,:]) * minimum(gO_ratio[z,:]) * (minimum(gO_ratio[z,:]) >= minimum(bO_ratio[z,:]) &&  minimum(gI_ratio[z,:]) >= (1.0 - eps())    ) for z in 1:nDMUs]
         end
         return min(maximum(normalFrontierDistances),maximum(bFrontierDistances))
-        @error "Directions not supported"
-        =#
-    end
 
-
-
-
-
-
-#=
-
-    # TODO: consider bad inputs, consider directions, consider multiplicative/additive structure
-
-if prodStructure == "multiplicative"
-
-    gI_ratio  =  gI₀' ./ gI
-    bI_ratio  =  bI₀' ./ bI
-    gO_ratio  =  gO ./ gO₀'
-    bO_ratio  =  bO ./ bO₀'
-
-    if retToScale == "constant"
-        normalFrontierDistances   = [minimum(gI_ratio[z,:]) * minimum(hcat(gO_ratio,bO_ratio)[z,:]) for z in 1:nDMUs]
-        bFrontierDistances        = [minimum(gI_ratio[z,:]) * minimum(gO_ratio[z,:]) * (minimum(gO_ratio[z,:]) >= minimum(bO_ratio[z,:])) for z in 1:nDMUs]
     else
-        normalFrontierDistances   = [minimum(gI_ratio[z,:]) * minimum(hcat(gO_ratio,bO_ratio)[z,:] * ( minimum(gI_ratio[z,:]) >= (1.0 - eps()) ) ) for z in 1:nDMUs]
-        bFrontierDistances        = [minimum(gI_ratio[z,:]) * minimum(gO_ratio[z,:]) * (minimum(gO_ratio[z,:]) >= minimum(bO_ratio[z,:]) &&  minimum(gI_ratio[z,:]) >= (1.0 - eps())    ) for z in 1:nDMUs]
+        @error "Directions not supported"
+        return missing
     end
-    return min(maximum(normalFrontierDistances),maximum(bFrontierDistances))
-else
-=#
-
-
-
-
-
 
 end # end function
 

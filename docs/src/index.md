@@ -7,9 +7,8 @@ The BDisposal package proposes a serie of environmental efficiency and productiv
 
 ## Installation
 
-Until the BDisposal package is registered, please use:
-* `] add git@github.com/sylvaticus/BDisposal.jl.git`
-Once the BDisposal package will be included in the standard Julia register, install it with:
+Install the BDisposal package with:
+
 * `] add BDisposal.jl`
 
 ## Loading the module(s)
@@ -46,7 +45,7 @@ println("Estimating French airports efficiency and productivity indexes...")
 
 # Loading airport data and preparing the data..
 # Data is stored as a  CSV files with 6 columns: period, dmu, co2emissions, passengers, employees, totalCosts
-airportData = CSV.read(joinpath(dirname(pathof(BDisposal)),"test","data","airports.csv"),DataFrame; delim=';',copycols=true)
+airportData = CSV.read(joinpath(dirname(pathof(BDisposal)),"..","test","data","airports.csv"),DataFrame; delim=';',copycols=true)
 airportGoodInputs  = ["employees","totalCosts"]
 airportBadInputs   = []
 airportGoodOutputs = ["passengers"]
@@ -76,7 +75,7 @@ end
 
 # Call the function to get the efficiency measurements for constant returns to scale
 (λ, λ_convex, λ_nonconvex, nonConvTest, nonConvTest_value) = efficiencyScores(
-gI,gO,bO,bI,retToScale="constant", dirGI=0,dirBI=0,dirGO=1,dirBO=-1, prodStructure="multiplicative")
+  gI,gO,bO,bI,retToScale="constant", dirGI=0,dirBI=0,dirGO=1,dirBO=-1, prodStructure="multiplicative")
 
 
 # Add periods as headers and decision making names as first column in order to show the data
@@ -133,7 +132,7 @@ Here we compute the productivity indexes of various OECD countries (with data fr
 [Jeon and Sickles (2004)](https://doi.org/10.1002/jae.769)) in terms of gdp growth over traditional production inputs as capital and labour, but also considering CO2 emissions and energy use.
 
 ```julia
-using Test, DataFrames, CSV, BDisposal
+using DataFrames, CSV, BDisposal
 
 # Loading data and formatting them in the way required by `prodIndex`
 data = CSV.read(joinpath(dirname(pathof(BDisposal)),"..","test","data","js-data","oecd.txt"),DataFrame; delim=' ',ignorerepeated=true,copycols=true,header=false)
@@ -186,23 +185,23 @@ pIdxDf = DataFrame(pIdx, Symbol.(vcat("Country",periods[2:end])))
 │ Row │ Country           │ 1981     │ 1982     │ 1983     │ 1984     │ 1985     │ 1986     │ 1987     │ 1988     │ 1989     │ 1990     │
 │     │ Any               │ Any      │ Any      │ Any      │ Any      │ Any      │ Any      │ Any      │ Any      │ Any      │ Any      │
 ├─────┼───────────────────┼──────────┼──────────┼──────────┼──────────┼──────────┼──────────┼──────────┼──────────┼──────────┼──────────┤
-│ 1   │ Australia         │ 0.977736 │ 0.930367 │ 1.02808  │ 0.922041 │ 0.903767 │ 0.981794 │ 0.926536 │ 0.933665 │ 0.900673 │ 0.911629 │
-│ 2   │ Austria           │ 0.979773 │ 1.1484   │ 1.0755   │ 0.857465 │ 0.980912 │ 0.956835 │ 1.02945  │ 0.99305  │ 0.977884 │ 0.907733 │
-│ 3   │ Belgium           │ 1.03689  │ 1.12484  │ 1.19398  │ 0.94616  │ 0.960489 │ 0.971912 │ 1.00726  │ 1.0175   │ 0.939892 │ 0.927984 │
-│ 4   │ Canada            │ 1.08087  │ 1.12208  │ 1.00472  │ 0.92367  │ 0.908971 │ 1.0187   │ 0.942769 │ 0.861271 │ 0.946958 │ 1.07538  │
-│ 5   │ Denmark           │ 1.17174  │ 1.14005  │ 1.11183  │ 0.92177  │ 0.789207 │ 1.01925  │ 0.971461 │ 1.09953  │ 1.01282  │ 1.07378  │
-│ 6   │ Finland           │ 1.03309  │ 1.2081   │ 1.04533  │ 1.00031  │ 0.890516 │ 0.967695 │ 0.886199 │ 1.00992  │ 0.929423 │ 0.961372 │
-│ 7   │ France            │ 1.16358  │ 1.09384  │ 1.0184   │ 1.03677  │ 0.956388 │ 1.07021  │ 0.99718  │ 1.0758   │ 0.892974 │ 0.963363 │
-│ 8   │ Germany           │ 1.10511  │ 1.05712  │ 0.996193 │ 0.977022 │ 0.974394 │ 0.945363 │ 1.02082  │ 1.00494  │ 1.05994  │ 0.948425 │
-│ 9   │ Greece            │ 1.00932  │ 1.05743  │ 0.905147 │ 0.938576 │ 0.893084 │ 0.946607 │ 0.866151 │ 0.857219 │ 0.959915 │ 0.894322 │
-│ 10  │ Ireland           │ 1.07958  │ 1.08491  │ 1.02     │ 1.05953  │ 0.89387  │ 0.842009 │ 1.04458  │ 0.963471 │ 0.906481 │ 0.881976 │
-│ 11  │ Italy             │ 0.995132 │ 1.04782  │ 1.03963  │ 0.966547 │ 0.944159 │ 0.993876 │ 0.879858 │ 0.995899 │ 0.922306 │ 1.00178  │
-│ 12  │ Japan             │ 1.02888  │ 1.11865  │ 1.05006  │ 0.858129 │ 1.00571  │ 1.02974  │ 0.962465 │ 0.880748 │ 0.934798 │ 0.938167 │
-│ 13  │ Norway            │ 1.13759  │ 1.12891  │ 0.91908  │ 0.895774 │ 0.875403 │ 0.931362 │ 0.865495 │ 1.18694  │ 0.91841  │ 1.01966  │
-│ 14  │ Spain             │ 0.958627 │ 0.896678 │ 1.01058  │ 1.04446  │ 1.03482  │ 0.979829 │ 0.992774 │ 0.916314 │ 0.856962 │ 1.11224  │
-│ 15  │ Sweden            │ 1.17011  │ 1.22715  │ 1.0454   │ 1.01861  │ 0.87206  │ 1.0145   │ 0.966368 │ 1.02     │ 1.10414  │ 1.0589   │
-│ 16  │ U.K.              │ 1.08107  │ 1.08338  │ 0.964598 │ 0.981305 │ 0.94632  │ 0.974735 │ 0.97043  │ 1.00685  │ 0.948206 │ 0.978984 │
-│ 17  │ the United States │ 1.05131  │ 1.1054   │ 1.00667  │ 0.905596 │ 1.00039  │ 0.996254 │ 0.935382 │ 0.914198 │ 0.972071 │ 0.983178 │
+│ 1   │ Australia         │ 0.980615 │ 0.874619 │ 1.07314  │ 0.946456 │ 0.913121 │ 0.971135 │ 0.952049 │ 0.963533 │ 0.891746 │ 0.869411 │
+│ 2   │ Austria           │ 0.950153 │ 1.13918  │ 1.08687  │ 0.861064 │ 0.996057 │ 0.96336  │ 1.04583  │ 1.02559  │ 1.00891  │ 0.930929 │
+│ 3   │ Belgium           │ 0.997489 │ 1.12907  │ 1.18585  │ 0.964121 │ 0.957716 │ 0.985223 │ 1.0288   │ 1.06768  │ 0.972852 │ 0.957646 │
+│ 4   │ Canada            │ 1.08493  │ 1.02772  │ 1.01386  │ 0.964103 │ 0.931114 │ 1.02906  │ 0.959126 │ 0.877363 │ 0.938174 │ 1.02891  │
+│ 5   │ Denmark           │ 1.13549  │ 1.17356  │ 1.13089  │ 0.961468 │ 0.811909 │ 1.03924  │ 0.949642 │ 1.08736  │ 1.00549  │ 1.08056  │
+│ 6   │ Finland           │ 1.03238  │ 1.24164  │ 1.06111  │ 1.02071  │ 0.911113 │ 0.979476 │ 0.919278 │ 1.06038  │ 0.987295 │ 0.947106 │
+│ 7   │ France            │ 1.1395   │ 1.09728  │ 0.999966 │ 1.03334  │ 0.960895 │ 1.08548  │ 1.0046   │ 1.10412  │ 0.90306  │ 0.9627   │
+│ 8   │ Germany           │ 1.07873  │ 1.02427  │ 1.00385  │ 0.987006 │ 0.983202 │ 0.967011 │ 1.03386  │ 1.03729  │ 1.03669  │ 0.981721 │
+│ 9   │ Greece            │ 0.975428 │ 1.04479  │ 0.880086 │ 0.941675 │ 0.910409 │ 0.937702 │ 0.851516 │ 0.885416 │ 0.99565  │ 0.892712 │
+│ 10  │ Ireland           │ 1.07683  │ 1.06534  │ 0.974727 │ 1.07845  │ 0.902097 │ 0.824995 │ 1.08184  │ 1.00502  │ 0.974711 │ 0.948907 │
+│ 11  │ Italy             │ 0.966255 │ 1.02578  │ 1.02878  │ 0.980468 │ 0.952348 │ 1.00805  │ 0.894706 │ 1.021    │ 0.931195 │ 1.00194  │
+│ 12  │ Japan             │ 1.02906  │ 1.11366  │ 1.04336  │ 0.869509 │ 1.02776  │ 1.02243  │ 0.971448 │ 0.90699  │ 0.944852 │ 0.94903  │
+│ 13  │ Norway            │ 1.13115  │ 1.1108   │ 0.949576 │ 0.936553 │ 0.904088 │ 0.956691 │ 0.859323 │ 1.16245  │ 0.898815 │ 1.02487  │
+│ 14  │ Spain             │ 0.915789 │ 0.883303 │ 0.996596 │ 1.01146  │ 1.03484  │ 0.991454 │ 1.01437  │ 0.921896 │ 0.849651 │ 1.08936  │
+│ 15  │ Sweden            │ 1.13215  │ 1.2188   │ 1.04962  │ 1.0498   │ 0.878779 │ 1.0206   │ 0.958626 │ 1.00718  │ 1.09563  │ 1.03445  │
+│ 16  │ U.K.              │ 1.04728  │ 1.09075  │ 0.996706 │ 0.998393 │ 0.966998 │ 1.00421  │ 1.00086  │ 1.04238  │ 0.944179 │ 0.9494   │
+│ 17  │ the United States │ 1.05193  │ 1.04846  │ 1.02621  │ 0.955054 │ 1.00271  │ 0.995934 │ 0.940216 │ 0.929503 │ 0.980136 │ 0.964614 │
 ```
 
 ```julia

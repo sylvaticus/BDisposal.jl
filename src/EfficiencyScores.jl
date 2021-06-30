@@ -19,7 +19,7 @@ distance to the production frontier, i.e. their degree of efficiency.
   *  `bI`: "Bad" inputs (optional 3D matrix by DMUs, input items and periods) [default: empty array]
 - Keyword
   *  `retToScale`: Wheter the returns to scale should be assumed "constant" or "variable" (default). Non-convex distance and test is computed
-      only under the "variable" assumption
+      only under the "variable" assumption, except for the `(0,0,1,-1)` distance under multiplicative production function
   *  `prodStructure`: Wheter the production structure should be assumed "additive" (default) or "multiplicative"
   *  `dirGI`,`dirBI`,`dirGO`,`dirBO`: The directions toward where to measure the efficiency (see notes) [default: `(0,0,1,0)`]
   *  `startθ`,`startμ`,`startλ`: Initial values in the convex optimisation problem [default: `(0,0,1.1)`]
@@ -78,7 +78,7 @@ production process boundaries.
 ## Notes:
 * Directions toward where to measure the efficiency distance can be tuned using the `dirGI`,`dirBI`,`dirGO` and `dirBO` parameters.
 * The following directions are supported:
-  - multiplicative pr. struct.: (-1,0,0,0), (0,-1,0,0), (0,0,1,0) or (0,0,0,-1)
+  - multiplicative pr. struct.: (-1,0,0,0), (0,-1,0,0), (0,0,1,0), (0,0,0,-1) or (0,0,1,-1)
   - addittive pr. struct.: (1,0,0,0), (0,1,0,0), (0,0,1,0) or (0,0,0,1)
   Other directions can be used to compute the direction under the convex frontier assumption, but the convexity test is not performed and,
   for the multiplicative case, no guarantee is given on solving the underliying (non-linear) problem (different initial value
@@ -100,15 +100,15 @@ function efficiencyScores(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Fl
     # Tests if doing also convex analysis or not
     doNonConvexAnalysis = true
 
-    if retToScale == "constant"
-        @warn "Non-convex analysis is supported only with variable returns to scale"
+    if retToScale == "constant" && directions != (0,0,1,-1)
+        @warn "Non-convex analysis is supported only with variable returns to scale or with direcitons (0,0,1,-1) and multiplicative production structure."
         doNonConvexAnalysis = false
     end
 
     if  prodStructure == "multiplicative"
-        if !( directions in [(-1,0,0,0),(0,-1,0,0),(0,0,1,0),(0,0,0,-1)])
+        if !( directions in [(-1,0,0,0),(0,-1,0,0),(0,0,1,0),(0,0,0,-1),(0,0,1,-1)])
             @warn "Non-convex analysis not supported with these directions. For the multiplicative case,
-            non-convex analysis is supported only with directions (-1,0,0,0),(0,-1,0,0),(0,0,1,0) or (0,0,0,-1)"
+            non-convex analysis is supported only with directions (-1,0,0,0),(0,-1,0,0),(0,0,1,0),(0,0,0,-1) or (0,0,1,-1)"
              doNonConvexAnalysis = false
         end
     else
@@ -118,6 +118,8 @@ function efficiencyScores(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Fl
              doNonConvexAnalysis = false
         end
     end
+    # temp todo:
+    doNonConvexAnalysis = true
 
     # Loping over the periods
     for t in 1:nPer

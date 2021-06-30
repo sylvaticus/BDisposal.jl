@@ -1,7 +1,6 @@
 module BDisposal
 
-using JuMP, Ipopt, GLPK
-#, AmplNLWriter
+using JuMP, Ipopt, GLPK, AmplNLWriter
 
 export efficiencyScores, prodIndex, dmuEfficiency, dmuEfficiencyDual
 # for debug only:
