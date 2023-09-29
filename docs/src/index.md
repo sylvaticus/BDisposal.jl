@@ -27,8 +27,9 @@ Both components can consider constant or variable returns to scale, convex or no
 
 They are detailed in their respective pages:
 
-- [**`efficiencyScores()`**](efficiencyScores.html): Compute efficiency indicators and convexity test results;
-- [**`prodIndex()`**](prodIndex.html): Compute productivity indexes;
+- [`efficiencyScores`](@ref): Compute efficiency indicators and convexity test results;
+- [`prodIndex`](@ref): Compute productivity indexes;
+- [`prodIndexFB`](@ref): Compute productivity indexes under a provided fixed base;
 
 The package provides also a couple of functions to compute individual DMU problem using "vanilla" DEA (without considering the beta disposability assumption), [`dmuEfficiency`](@ref) and [`dmuEfficiencyDual`](@ref).
 
@@ -65,12 +66,12 @@ bO = Array{Float64}(undef, (nDMUs,nBO,nPer)) # Bad outputs, aka "undesiderable" 
 # Transferring data to the containers
 for (p,period) in enumerate(periods)
     periodData = airportData[airportData.period .== period,:]
-    gI[:,:,p] = convert(Matrix{Float64},periodData[:,airportGoodInputs])
+    gI[:,:,p] = Matrix(periodData[:,airportGoodInputs])
     if nBI > 0
-         bI[:,:,p] = convert(Matrix{Float64},periodData[:,airportBadInputs])
+         bI[:,:,p] = Matrix(periodData[:,airportBadInputs])
     end
-    gO[:,:,p] = convert(Matrix{Float64},periodData[:,airportGoodOutputs])
-    bO[:,:,p] = convert(Matrix{Float64},periodData[:,airportBadOutputs])
+    gO[:,:,p] = Matrix(periodData[:,airportGoodOutputs])
+    bO[:,:,p] = Matrix(periodData[:,airportBadOutputs])
 end
 
 # Call the function to get the efficiency measurements for constant returns to scale
@@ -237,9 +238,47 @@ AustriaPIdxDf  = DataFrame(AustriaPIdx, Symbol.(vcat("Item",periods[2:end])))
 │ 6   │ Decomposition for the scale (residual) component │ 1.0737   │ 1.01453 │ 0.954357 │ 0.988098 │ 0.957945 │ 0.970511 │ 0.930198 │ 0.960434 │ 0.909664 │ 0.914914 │
 ```
 
+# Production indexes considering a fixed base
+
+Similarly, we can compute the production index with reference to a fixed base, both in term of specific DMU and period.
+For example, if we consider as reference base the US observation for 1989 we have:
+
+```julia
+# Performing the analysis
+oecdAnalysisFB  = prodIndexFB(gI,gO,bO,bI;remarcable_obs_dmu=17,remarcable_obs_period=10);
+pIdx = oecdAnalysisFB.prodIndexes;
+
+# Add periods as headers and decision making names as first column in order to show the data
+# Efficiency Indexes
+pIdx  = hcat(dmus,pIdx);
+pIdxDf = DataFrame(pIdx, Symbol.(vcat("Country",periods)))
+```
+```
+ Row │ Country            1980         1981         1982         1983         1984         1985         1986         1987         1988         1989         1990        
+     │ Any                Any          Any          Any          Any          Any          Any          Any          Any          Any          Any          Any         
+─────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   1 │ Australia          0.000990747  0.00102238   0.00104535   0.00106707   0.0011966    0.00134927   0.00137213   0.00153062   0.00170403   0.00190516   0.00202583
+   2 │ Austria            0.000103987  0.000103968  9.0544e-5    8.53889e-5   0.00010007   0.000103614  0.000109087  0.000107653  0.000111959  0.000118265  0.000133616
+   3 │ Belgium            0.000548718  0.000512234  0.000458746  0.000381597  0.000410967  0.000426637  0.000444979  0.000451222  0.000465334  0.000512454  0.000569875
+   4 │ Canada             0.00832702   0.00790575   0.00662924   0.00675101   0.00772083   0.00882244   0.00891513   0.00979034   0.0118275    0.0126891    0.0115645
+   5 │ Denmark            8.21952e-5   6.84335e-5   6.17971e-5   5.65799e-5   6.41921e-5   8.4313e-5    8.54746e-5   8.76725e-5   7.98611e-5   7.8859e-5    7.46455e-5
+   6 │ Finland            8.12688e-5   7.86115e-5   6.68769e-5   6.49423e-5   6.62465e-5   7.61118e-5   7.96103e-5   9.31865e-5   9.68827e-5   0.00011073   0.00011347
+   7 │ France             0.00754285   0.00644225   0.00596744   0.00580938   0.00561904   0.00592596   0.00565579   0.0057622    0.00555473   0.00638032   0.00672812
+   8 │ Germany            0.0154787    0.0137312    0.0126993    0.0129362    0.0134858    0.0139653    0.0151107    0.0149917    0.0153983    0.0142087    0.0155073
+   9 │ Greece             4.32324e-5   4.27438e-5   4.09761e-5   4.48322e-5   4.8327e-5    5.60026e-5   5.97699e-5   6.86058e-5   8.28546e-5   8.98524e-5   0.000101018
+  10 │ Ireland            8.83073e-6   8.32965e-6   7.71712e-6   7.35993e-6   7.1506e-6    8.16134e-6   9.54632e-6   9.53161e-6   1.03376e-5   1.22625e-5   1.50621e-5
+  11 │ Italy              0.00413459   0.00411261   0.00388937   0.00372799   0.00393073   0.00423347   0.00436165   0.00508875   0.00529599   0.00587679   0.00595866
+  12 │ Japan              0.0157031    0.0156941    0.014342     0.0138899    0.0167466    0.0173988    0.0171764    0.0184454    0.0221081    0.0245773    0.0273242
+  13 │ Norway             7.61648e-5   6.70166e-5   5.88881e-5   6.68082e-5   7.83479e-5   9.38574e-5   0.000103544  0.000120039  9.98515e-5   0.000107198  0.000106517
+  14 │ Spain              0.00101654   0.00103208   0.00115287   0.00114513   0.00109003   0.00106861   0.00112689   0.00119822   0.00137574   0.00168567   0.00156616
+  15 │ Sweden             0.000302108  0.000255463  0.000209698  0.000203095  0.000207004  0.000241194  0.000241541  0.000256412  0.000254944  0.000233936  0.000221067
+  16 │ U.K.               0.00809758   0.00716331   0.00660083   0.00705684   0.00729171   0.0078856    0.00842427   0.00907481   0.00949474   0.0102033    0.0103832
+  17 │ the United States  0.75476      0.725291     0.628489     0.638697     0.747291     0.759032     0.774467     0.844417     0.951598     1.0          1.01465
+```
+
 ### Vanilla DEA Example
 
-`BDisposal` provide also a simple function for "vanilla" DEA computation.
+`BDisposal` provides also a simple function for "vanilla" DEA computation.
 In this example we have 4 DMU with two inputs and one output, and we compute the
 efficiency of the latest DMU:
 

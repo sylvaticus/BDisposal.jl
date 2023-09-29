@@ -7,7 +7,6 @@
 
 Compute productivity indexes with a fixed base.
 
-
 Given a set of measures of inputs, "good" ("desiderable") and "bad" ("undesiderable") outputs for different decision making units, and a specific dmu/time observation to consider as base ("remarcable"), provides the productivity indexes at various time periods.
 
 ## Parameters:
@@ -33,11 +32,26 @@ Given a set of measures of inputs, "good" ("desiderable") and "bad" ("undesidera
     
 `prodIndexFB` > 1 indicates environmentally-adjusted performance improvement. In such case, the remarkable observation produces more good outputs and less bad goods than the compared observation for a given level of good and bad inputs. Alongside, less good and bad inputs are employed by the remarkable observation relatively to the compared observation for given good and bad outputs. If `prodIndexFB < 1`, the reverse reasonning holds.
 
+## Example
+```Julia
+julia> using BDisposal
+julia> # 2 DMUs, 2 good Inputs, 2 bad inputs, 3 good outputs and 2 bad outputs. 2 periods
+       gI = [1; 3; 5;; 2; 4; 5;;; 1; 4; 5;; 2; 5; 5];
+julia> bI = [2; 4; 2;; 3; 7; 5;;; 2; 3; 2;; 3; 6; 5];
+julia> gO = [10; 30; 50;; 20; 40; 50;; 15; 8; 12;;; 12; 40; 50;; 22; 50; 50;; 16; 55; 55];
+julia> bO = [2; 4; 2;; 3; 7; 5;;; 2; 3; 2;; 3; 6; 5];
+julia> analysis = prodIndexFB(gI,gO,bO,bI;remarcable_obs_dmu=1, remarcable_obs_period=2);
+julia> analysis.prodIndexes
+3×2 Matrix{Union{Missing, Float64}}:
+ 0.909091  1.0
+ 3.63636   2.33766
+ 1.2987    1.2987
+```
 ## Notes:
 * The function assumes convex, multiplicative production functions with variable returns to scale
 
 """
-function prodIndexFB(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3},bI::Array{Float64,3}=Array{Float64}(missing, (size(gI,1),0,size(gI,3)));remarcable_obs_dmu=1,remarcable_obs_period=1)
+function prodIndexFB(gI::AbstractArray{TgI,3},gO::AbstractArray{TgO,3},bO::AbstractArray{TbO,3},bI::AbstractArray{TbI,3}=zeros(size(gI,1),0,size(gI,3));remarcable_obs_dmu=1,remarcable_obs_period=1) where {TgI <: Number, TgO <: Number, TbO <: Number, TbI <: Number}
 
     # Working on the logs of the data
     gI = log.(gI); gO = log.(gO); bO = log.(bO); bI = log.(bI)
@@ -91,7 +105,7 @@ function prodIndexFB(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64
     dirBO = (0,0,0,1) 
 
     idx_gi_r = problemFB(gIᵣ,bIₘᵢₙ,gOₘᵢₙ,bOₘₐₓ,gIₘ,bIₘ,gOₘ,bOₘ,directions=dirGI) |> exp
-    idx_bi_r = problemFB(gIₘₐₓ,bIᵣ,gOₘᵢₙ,bOₘₐₓ,gIₘ,bIₘ,gOₘ,bOₘ,directions=dirBI) |> exp
+    idx_bi_r = (nbI == 0) ? noBadIndexDefault : problemFB(gIₘₐₓ,bIᵣ,gOₘᵢₙ,bOₘₐₓ,gIₘ,bIₘ,gOₘ,bOₘ,directions=dirBI) |> exp
     idx_go_r = problemFB(gIₘₐₓ,bIₘᵢₙ,gOᵣ,bOₘₐₓ,gIₘ,bIₘ,gOₘ,bOₘ,directions=dirGO) |> exp
     idx_bo_r = problemFB(gIₘₐₓ,bIₘᵢₙ,gOₘᵢₙ,bOᵣ,gIₘ,bIₘ,gOₘ,bOₘ,directions=dirBO) |> exp
 

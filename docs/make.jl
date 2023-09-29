@@ -9,6 +9,7 @@ makedocs(sitename="BDisposal.jl Documentation",
             "Index" => "index.md",
             "Efficiency Scores" => "efficiencyScores.md",
             "Productivity Index" => "prodIndex.md",
+            "Fixed base Productivity Index" => "prodIndexFB.md",
             "Vanilla DEA on individual DMU" => "individualDMUProblem.md",
          ],
          format = Documenter.HTML(prettyurls = false)

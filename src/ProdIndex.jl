@@ -13,10 +13,10 @@ productivity indexes improvements (or declines) between consecutive time periods
 
 ## Parameters:
 - Positional
-  *  `gI`: "Good" inputs (3D matrix by DMUs, input items and periods)
-  *  `gO`: "Good" outputs (3D matrix by DMUs, input items and periods)
-  *  `bO`: "Bad" outputs (3D matrix by DMUs, input items and periods)
-  *  `bI`: "Bad" inputs (optional 3D matrix by DMUs, input items and periods) [default: empty array]
+  *  `gI`: "Good" inputs (3D array by DMUs, input items and periods)
+  *  `gO`: "Good" outputs (3D array by DMUs, input items and periods)
+  *  `bO`: "Bad" outputs (3D array by DMUs, input items and periods)
+  *  `bI`: "Bad" inputs (optional 3D array by DMUs, input items and periods) [default: empty array]
 - Keyword
   *  `retToScale`: Wheter the return to scales should be assumed "constant" (default) or "variable"
   *  `prodStructure`: Wheter the production structure should be assumed "additive" (default) or "multiplicative"
@@ -78,12 +78,29 @@ the technological change is greater (respectively, lesser) than 1 then, technolo
 crease (respectively, decrrease) arises. A similar reasonnng applies for the multiplicative
 technical and scale efficiency components.
 
+## Example:
+
+```julia
+julia> using BDisposal
+julia> # 2 DMUs, 2 good Inputs, 2 bad inputs, 3 good outputs and 2 bad outputs. 2 periods
+       gI = [1; 3; 5;; 2; 4; 5;;; 1; 4; 5;; 2; 5; 5];
+julia> bI = [2; 4; 2;; 3; 7; 5;;; 2; 3; 2;; 3; 6; 5];
+julia> gO = [10; 30; 50;; 20; 40; 50;; 15; 8; 12;;; 12; 40; 50;; 22; 50; 50;; 16; 55; 55];
+julia> bO = [2; 4; 2;; 3; 7; 5;;; 2; 3; 2;; 3; 6; 5];
+julia> analysis = prodIndex(gI,gO,bO,bI,retToScale="variable",convexAssumption=false);
+julia> analysis.prodIndexes
+3×1 Matrix{Union{Missing, Float64}}:
+ 1.131370849898476
+ 3.5322587464470736
+ 2.140872096444188
+```
+
 ## Notes:
 * The decomposition by technological, efficiency and scale components is done only for the convex assumption,
 as in the non-convex case the individual distance components used to compute these disaggregations are infinite.
 """
-function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3},bI::Array{Float64,3}=Array{Float64}(missing, (size(gI,1),0,size(gI,3)));
-                   retToScale="constant",prodStructure="multiplicative",convexAssumption=true)
+function prodIndex(gI::AbstractArray{TgI,3},gO::AbstractArray{TgO,3},bO::AbstractArray{TbO,3},bI::AbstractArray{TbI,3}=zeros((size(gI,1),0,size(gI,3))); retToScale="constant",prodStructure="multiplicative",convexAssumption=true) where {TgI <: Number, TgO <: Number, TbO <: Number, TbI <: Number}
+
 
     nDMUs = size(gI,1)
     nPer = size(gI,3)
