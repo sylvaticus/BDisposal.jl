@@ -81,7 +81,6 @@ technical and scale efficiency components.
 ## Notes:
 * The decomposition by technological, efficiency and scale components is done only for the convex assumption,
 as in the non-convex case the individual distance components used to compute these disaggregations are infinite.
-
 """
 function prodIndex(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3},bI::Array{Float64,3}=Array{Float64}(missing, (size(gI,1),0,size(gI,3)));
                    retToScale="constant",prodStructure="multiplicative",convexAssumption=true)

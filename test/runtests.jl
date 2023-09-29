@@ -8,6 +8,11 @@ println("Testing BDisposal on js-data...")
 
 data = CSV.read(joinpath(dirname(pathof(BDisposal)),"..","test","data","js-data","oecd.txt"),DataFrame; delim=' ',ignorerepeated=true,copycols=true,header=false)
 rename!(data,[:ccid,:year,:gdp,:co2,:capital,:labour,:energy])
+dmuMap = Dict(1 => "Canada", 2 => "the United States", 3 => "Japan", 4 => "Austria",
+              5 => "Belgium", 6 => "Denmark", 7 => "Finland", 8 => "France", 9 => "Germany",
+              10 => "Greece", 11 => "Ireland", 12 => "Italy", 13 => "Norway", 14 => "Spain",
+              15 => "Sweden", 16 => "U.K.", 17 => "Australia")
+data.ccid = map(x->dmuMap[x], data.ccid)     
 goodInputsLabels  = ["capital","labour"]
 badInputsLabels   = ["energy"]
 goodOutputsLabels = ["gdp"]
@@ -40,7 +45,7 @@ end
 oecdAnalysis  = prodIndex(gI,gO,bO,bI;
                    retToScale="variable",prodStructure="multiplicative",convexAssumption=true)
 
-@test oecdAnalysis.prodIndexes[1,10] == 1.02891196267105
+@test oecdAnalysis.prodIndexes[4,10] == 1.02891196267105
 
 
 @test isapprox(oecdAnalysis.prodIndexes_G .* oecdAnalysis.prodIndexes_B, oecdAnalysis.prodIndexes, atol=0.000001)
@@ -51,7 +56,7 @@ decomp = isapprox.(oecdAnalysis.prodIndexes_T .* oecdAnalysis.prodIndexes_E .* o
 oecdAnalysisA  = prodIndex(gI,gO,bO,bI;
                    retToScale="variable",prodStructure="addittive",convexAssumption=true)
 
-@test oecdAnalysisA.prodIndexes[1,10] == 0.02111291275337509
+@test oecdAnalysisA.prodIndexes[4,10] == 0.02111291275337509
 @test isapprox(oecdAnalysisA.prodIndexes_G .+ oecdAnalysisA.prodIndexes_B, oecdAnalysisA.prodIndexes, atol=0.000001)
 decomp =  isapprox.(oecdAnalysisA.prodIndexes_T .+ oecdAnalysisA.prodIndexes_E .+ oecdAnalysisA.prodIndexes_S, oecdAnalysisA.prodIndexes, atol=0.000001)
 @test all(skipmissing(decomp)) == true
@@ -68,8 +73,22 @@ oecdAnalysis_ncA  = prodIndex(gI,gO,bO,bI;
 
 @test isapprox(log.(oecdAnalysis_nc.prodIndexes), oecdAnalysis_ncA.prodIndexes, atol=0.05)
 
+oecdAnalysisFB  = prodIndexFB(gI,gO,bO,bI;remarcable_obs_dmu=17, remarcable_obs_period=10)
+
+@test oecdAnalysisFB.prodIndexes[17,10] ≈ 1.0
+
+@test oecdAnalysisFB.prodIndexes[1,1] ≈ 0.000990746731264865
+
+oecdAnalysisFB2  = prodIndexFB(gI,gO,bO,bI;remarcable_obs_dmu=4, remarcable_obs_period=4)
+@test oecdAnalysisFB2.prodIndexes[4,4] ≈ 1.0
+@test oecdAnalysisFB2.prodIndexes[17,4] ≈ 94.60766200738495
+
+@test all(.! ismissing.(oecdAnalysisFB2.prodIndexes)) # none is missing
+
+
 ################################################################################
 # Testing efficiencyScore using the Airports dataset..
+
 
 println("Testing BDisposal on airport data...")
 airportData = CSV.read(joinpath(dirname(pathof(BDisposal)),"..","test","data","airports.csv"),DataFrame; delim=';',copycols=true)
