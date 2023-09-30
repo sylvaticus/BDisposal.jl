@@ -1,6 +1,6 @@
 module BDisposal
 
-using Statistics, JuMP, Ipopt, GLPK, AmplNLWriter
+using Statistics, JuMP, Ipopt, GLPK, AmplNLWriter, PrecompileTools
 
 export efficiencyScores, prodIndex, prodIndexFB, dmuEfficiency, dmuEfficiencyDual
 # for debug only:
@@ -10,6 +10,7 @@ include("EfficiencyScores.jl")
 include("ProdIndex.jl")
 include("ProdIndexFB.jl")
 include("IndividualDMUProblem.jl")
+include("Precompilation.jl")
 
 
 end # module

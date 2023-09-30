@@ -85,10 +85,10 @@ production process boundaries.
   `startθ`,`startμ`,`startλ` can be attempted)
 
 """
-function efficiencyScores(gI::Array{Float64,3},gO::Array{Float64,3},bO::Array{Float64,3},bI::Array{Float64,3}=Array{Float64}(undef, (size(gI,1),0,size(gI,3)));
+function efficiencyScores(gI::AbstractArray{TgI,3},gO::AbstractArray{TgO,3},bO::AbstractArray{TbO,3},bI::AbstractArray{TbI,3}=zeros(size(gI,1),0,size(gI,3));
                           retToScale="variable",prodStructure="additive",
                           dirGI=0,dirBI=0,dirGO=1,dirBO=0,
-                          startθ=0,startμ=0,startλ=1.1)
+                          startθ=0,startμ=0,startλ=1.1) where {TgI <: Number, TgO <: Number, TbO <: Number, TbI <: Number}
 
     # Data processing
     nDMUs, nPer, nGI, nBI, nGO, nBO = size(gI,1), size(gI,3), size(gI,2), size(bI,2), size(gO,2), size(bO,2)
