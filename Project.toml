@@ -1,7 +1,7 @@
 name = "BDisposal"
 uuid = "c8bf0fc5-5617-4766-b222-31d2f659b756"
 authors = ["Arnaud Abad <arnaud.2abd@gmail.com>", "Antonello Lobianco <antonello@lobianco.org>"]
-version = "0.0.3"
+version = "0.0.4"
 
 [deps]
 AmplNLWriter = "7c4d4715-977e-5154-bfe0-e096adeac482"
