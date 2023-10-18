@@ -8,8 +8,7 @@
 Compute productivity indexes
 
 
-Given a set of measures of inputs, "good" ("desiderable") and "bad" ("undesiderable") outputs for different decision making units, compute their
-productivity indexes improvements (or declines) between consecutive time periods.
+Given a set of measures of inputs, "good" ("desiderable") and "bad" ("undesiderable") outputs for different decision making units, compute their productivity indexes improvements (or declines) between consecutive time periods.
 
 ## Parameters:
 - Positional
@@ -51,31 +50,21 @@ productivity indexes improvements (or declines) between consecutive time periods
     - `prodIndexes_S_B_I`:    Decomposition for the scale (residual) component, bad inputs
 
 The second and third element of the tuple are respectively the "good inputs/outputs" and "bad/inputs/outputs" components.
-The first matrix can be retrieved from the two components by multiplying them (for `multiplicative` production structure)
-or summing them (for `additive` production strucure).
+
+The first matrix can be retrieved from the two components by multiplying them (for `multiplicative` production structure) or summing them (for `additive` production strucure).
 
 ## Description of the function
 
-`prodIndex()` displays environmental productivity indices. These
-productivity measures are implemented for different time periods (eg., years, months
-etc.) or spatial units (eg., countries, cities etc.), based on the  environmental efficiency
-indicators described in `efficiencyScores`. Hence, the environmental productivity indices inherit the
-structure of additive and multiplicative productivity measures.
+`prodIndex()` displays environmental productivity indices. These productivity measures are implemented for different time periods (eg., years, months etc.) or spatial units (eg., countries, cities etc.), based on the  environmental efficiency indicators described in `efficiencyScores`. Hence, the environmental productivity indices inherit the structure of additive and multiplicative productivity measures.
 
 ## Interpretation of the results
 
-The additive productivity indicator shows combined desirable and undesirable outputs
-productivity improvement (respectively decline) when it takes positive (respectively negative) values.
-In the multiplicative context, if the productivity measure is greater (respectively lesser) than
-1 then, desirable and undesirable outputs productivity increase (respectively decrease)
-arises. The BDisposal package underscores the prominent sources of environmental productivity
-change. The main drivers of productivity variation are technological change,
-technical efficiency variation and scale efficiency change. For the additive background,
-when the technological change is greater (respectively, lesser) than 0 then, technolog-
-ical improvement (respectively, deterioration) occurs. A similar reasoning applies for
-the additive technical and scale efficiency components. In the multiplicative context, if
-the technological change is greater (respectively, lesser) than 1 then, technological in-
-crease (respectively, decrrease) arises. A similar reasonnng applies for the multiplicative
+The additive productivity indicator shows combined desirable and undesirable outputs productivity improvement (respectively decline) when it takes positive (respectively negative) values.
+
+In the multiplicative context, if the productivity measure is greater (respectively lesser) than 1 then, desirable and undesirable outputs productivity increase (respectively decrease) arises. The BDisposal package underscores the prominent sources of environmental productivity change. The main drivers of productivity variation are technological change, technical efficiency variation and scale efficiency change. For the additive background, when the technological change is greater (respectively, lesser) than 0 then, technological improvement (respectively, deterioration) occurs.
+A similar reasoning applies for the additive technical and scale efficiency components.
+    
+In the multiplicative context, if the technological change is greater (respectively, lesser) than 1 then, technological increase (respectively, decrrease) arises. A similar reasonnng applies for the multiplicative
 technical and scale efficiency components.
 
 ## Example:

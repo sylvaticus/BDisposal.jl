@@ -123,6 +123,10 @@ end
   gI,gO,bO,bI,retToScale="variable", dirGI=0,dirBI=0,dirGO=1,dirBO=0, prodStructure="multiplicative")
 @test nonConvTest_value_crs[3,2]  ≈ 0.8842007631310966
 
+a = efficiencyScores(gI,gO,bO,bI,retToScale="constant", dirGI=0,dirBI=0,dirGO=1,dirBO=-1, prodStructure="multiplicative")
+
+λ = hcat(dmus,λ_crs)
+λdf = DataFrame(λ , Symbol.(vcat("DMU",periods)))
 
 ################################################################################
 # Basic testing of dmuEfficiency

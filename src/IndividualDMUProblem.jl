@@ -41,9 +41,10 @@ function convexProblem(inp₀,bInp₀,gO₀,bO₀,inp,bInp,gO,bO;
                redirect_stdout(open("nul", "w"))
 
                # Model declaration (efficiency model)
-               effmodel = Model(() -> AmplNLWriter.Optimizer(Ipopt.amplexe))
-               #effmodel = Model(optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0))
-               MOI.set(effmodel, MOI.RawParameter("print_level"), 0)
+               #effmodel = Model(() -> AmplNLWriter.Optimizer(Ipopt.amplexe))
+               effmodel = Model(optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0))
+               #MOI.set(effmodel, MOI.RawOptimizerAttribute("print_level"), 0)
+               #set_optimizer_attribute(effmodel, "print_level", 0)
 
                # Defining variables
                @variables effmodel begin
